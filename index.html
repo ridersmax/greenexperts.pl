@@ -74,39 +74,26 @@
       <p>Odliczanie do startu już trwa.</p>
       <section class="countdown" aria-live="polite">
         <div class="card">
-          <div class="value" id="days">–</div>
+          <div class="value" id="days">30</div>
           <div class="label">dni</div>
         </div>
         <div class="card">
-          <div class="value" id="hours">–</div>
+          <div class="value" id="hours">00</div>
           <div class="label">godzin</div>
         </div>
         <div class="card">
-          <div class="value" id="minutes">–</div>
+          <div class="value" id="minutes">00</div>
           <div class="label">minut</div>
         </div>
         <div class="card">
-          <div class="value" id="seconds">–</div>
+          <div class="value" id="seconds">00</div>
           <div class="label">sekund</div>
         </div>
       </section>
     </main>
 
     <script>
-      const STORAGE_KEY = "greenExpertsCountdownTarget";
-      const DURATION_DAYS = 30;
-
-      // Pobieramy lub tworzymy datę końcową
-      let targetDate = localStorage.getItem(STORAGE_KEY);
-
-      if (!targetDate) {
-        // Pierwszy raz – ustawiamy datę na 30 dni od teraz
-        const future = new Date(Date.now() + DURATION_DAYS * 24 * 60 * 60 * 1000);
-        targetDate = future.toISOString();
-        localStorage.setItem(STORAGE_KEY, targetDate);
-      }
-
-      const countdownTarget = new Date(targetDate).getTime();
+      const countdownTarget = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
       const elements = {
         days: document.getElementById("days"),
@@ -120,15 +107,6 @@
       const updateCountdown = () => {
         const now = Date.now();
         const diff = Math.max(countdownTarget - now, 0);
-
-        if (diff === 0) {
-          // Można tu dodać np. komunikat "Start!" lub ukryć licznik
-          elements.days.textContent = "0";
-          elements.hours.textContent = "00";
-          elements.minutes.textContent = "00";
-          elements.seconds.textContent = "00";
-          return;
-        }
 
         const totalSeconds = Math.floor(diff / 1000);
         const days = Math.floor(totalSeconds / 86400);
@@ -147,3 +125,4 @@
     </script>
   </body>
 </html>
+
