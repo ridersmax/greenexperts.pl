@@ -94,6 +94,8 @@
 
     <script>
       const countdownTarget = Date.now() + 30 * 24 * 60 * 60 * 1000;
+      const targetDate = "2026-03-11T18:00:00";
+      const countdownTarget = new Date(targetDate).getTime();
 
       const elements = {
         days: document.getElementById("days"),
@@ -113,9 +115,7 @@
         const hours = Math.floor((totalSeconds % 86400) / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
-        
-        const targetDate = "2026-03-11T18:00:00";   // 11 marca 2026, godz. 18:00
-const countdownTarget = new Date(targetDate).getTime();
+      
 
         elements.days.textContent = days;
         elements.hours.textContent = formatNumber(hours);
