@@ -1,131 +1,1804 @@
-<!doctype html>
-<html lang="pl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Green Experts</title>
+<!DOCTYPE html>
+<html lang="pl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Nexa CRM i ERP — sprzedaż oraz realizacja w jednym miejscu">
+    <title>Nexa — CRM & ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        ink: "#08090b",
+                        panel: "#0f1115",
+                        line: "#23262d",
+                        accent: "#8b5cf6"
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+                    },
+                    boxShadow: {
+                        panel: "0 24px 60px rgba(0,0,0,.24)",
+                        glow: "0 0 0 1px rgba(139,92,246,.18), 0 10px 35px rgba(124,58,237,.12)"
+                    }
+                }
+            }
+        };
+    </script>
     <style>
-      :root {
-        color-scheme: light dark;
-        font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: radial-gradient(circle at top, #d1f9df, #0d3b2a);
-        color: #f4fff8;
-      }
-
-      main {
-        text-align: center;
-        padding: 3rem 2.5rem;
-        border-radius: 24px;
-        background: rgba(15, 66, 47, 0.75);
-        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
-        max-width: 520px;
-        width: 90%;
-        backdrop-filter: blur(8px);
-      }
-
-      h1 {
-        font-size: clamp(2.1rem, 4vw, 3.2rem);
-        margin: 0 0 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.2rem;
-      }
-
-      p {
-        margin: 0 0 2rem;
-        font-size: 1.1rem;
-      }
-
-      .countdown {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-        gap: 1rem;
-      }
-
-      .card {
-        background: rgba(244, 255, 248, 0.1);
-        border-radius: 18px;
-        padding: 1.25rem 0.75rem;
-      }
-
-      .value {
-        font-size: 2.4rem;
-        font-weight: 700;
-      }
-
-      .label {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.15rem;
-        opacity: 0.75;
-      }
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            background:
+                radial-gradient(circle at 78% -15%, rgba(124, 58, 237, .12), transparent 30rem),
+                #08090b;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2d35; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b3f49; }
+        .table-row { transition: background-color .18s ease; }
+        .table-row:hover { background: rgba(255,255,255,.018); }
+        .nav-item { transition: color .18s ease, background-color .18s ease; }
+        .nav-item:hover { background: rgba(255,255,255,.04); color: #fff; }
+        .nav-item.active {
+            color: #fff;
+            background: linear-gradient(90deg, rgba(139,92,246,.15), rgba(139,92,246,.04));
+            box-shadow: inset 2px 0 #8b5cf6;
+        }
+        .field {
+            width: 100%;
+            border: 1px solid #292c34;
+            background: #111318;
+            color: #f5f5f5;
+            border-radius: .75rem;
+            padding: .7rem .85rem;
+            outline: none;
+            transition: border-color .18s ease, box-shadow .18s ease;
+        }
+        .field:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124,58,237,.13);
+        }
+        .modal-backdrop { animation: fadeIn .18s ease-out; }
+        .modal-panel { animation: riseIn .22s ease-out; }
+        .toast { animation: toastIn .22s ease-out; }
+        .app-view { min-height: calc(100vh - 105px); }
+        .kanban-grid {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(245px, 1fr);
+            gap: .75rem;
+            min-width: max-content;
+        }
+        .kanban-column { min-height: 360px; }
+        .kanban-column.drag-over {
+            border-color: rgba(139,92,246,.55);
+            background: rgba(139,92,246,.045);
+        }
+        .kanban-card { cursor: grab; transition: transform .16s ease, border-color .16s ease; }
+        .kanban-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.14); }
+        .kanban-card.dragging { opacity: .45; cursor: grabbing; }
+        .inline-edit { outline: none; border-radius: .4rem; transition: background .15s ease; }
+        .inline-edit:focus { background: rgba(139,92,246,.08); box-shadow: 0 0 0 2px rgba(139,92,246,.16); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(115px, 1fr)); }
+        .calendar-day { min-height: 116px; }
+        .view-scroll { max-height: calc(100vh - 205px); overflow: auto; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes riseIn { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+        @media (max-width: 1023px) {
+            #sidebar { transform: translateX(-100%); transition: transform .22s ease; }
+            #sidebar.open { transform: translateX(0); }
+        }
     </style>
-  </head>
-  <body>
-    <main>
-      <h1>Zaczynamy za</h1>
-      <p>Odliczanie do startu już trwa.</p>
-      <section class="countdown" aria-live="polite">
-        <div class="card">
-          <div class="value" id="days">30</div>
-          <div class="label">dni</div>
+</head>
+<body class="min-h-screen font-sans text-neutral-200 antialiased selection:bg-violet-500/30">
+    <div id="mobile-overlay" class="fixed inset-0 z-30 hidden bg-black/65 backdrop-blur-sm lg:hidden" onclick="toggleSidebar(false)"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-[252px] flex-col border-r border-white/[0.07] bg-[#0b0c0f]/95 px-3.5 py-4 backdrop-blur-xl">
+        <div class="flex h-12 items-center justify-between px-2.5">
+            <button class="group flex items-center gap-3" onclick="showView('dashboard')">
+                <span class="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 shadow-glow">
+                    <svg class="h-[18px] w-[18px] text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                        <path d="M5 17V7l7 7 7-7v10" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span>
+                    <span class="block text-[15px] font-bold tracking-[.12em] text-white">NEXA</span>
+                    <span class="block text-[9px] font-semibold uppercase tracking-[.2em] text-neutral-600">CRM & ERP</span>
+                </span>
+            </button>
+            <button class="rounded-lg p-2 text-neutral-500 hover:bg-white/5 hover:text-white lg:hidden" onclick="toggleSidebar(false)" aria-label="Zamknij menu">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
         </div>
-        <div class="card">
-          <div class="value" id="hours">00</div>
-          <div class="label">godzin</div>
+
+        <div class="mt-5 px-1">
+            <p class="px-3 text-[10px] font-semibold uppercase tracking-[.16em] text-neutral-600">Akcje</p>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+                <button onclick="openClientModal()" class="flex items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-2 py-2.5 text-[11px] font-semibold text-white shadow-lg shadow-violet-950/30 transition hover:bg-violet-500">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round"/></svg>
+                    Nowy klient
+                </button>
+                <button onclick="openProjectModal()" class="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[.035] px-2 py-2.5 text-[11px] font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[.07]">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round"/></svg>
+                    Nowe zlecenie
+                </button>
+            </div>
         </div>
-        <div class="card">
-          <div class="value" id="minutes">00</div>
-          <div class="label">minut</div>
+
+        <nav class="mt-6 flex-1 space-y-5 overflow-y-auto pb-3">
+            <div>
+                <p class="px-4 text-[10px] font-semibold uppercase tracking-[.16em] text-neutral-600">Pulpity</p>
+                <button data-nav="dashboard" onclick="activateNav(this); showView('dashboard')" class="nav-item active mt-1.5 flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                    <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+                    Dashboard
+                </button>
+            </div>
+            <div>
+                <p class="px-4 text-[10px] font-semibold uppercase tracking-[.16em] text-neutral-600">CRM Sprzedaży</p>
+                <div class="mt-1.5 space-y-0.5">
+                    <button onclick="activateNav(this); showView('clients')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 20v-2a4 4 0 0 0-3-3.87M16 2.13a4 4 0 0 1 0 7.75" stroke-linecap="round"/></svg>
+                        Klienci
+                        <span id="nav-client-count" class="ml-auto rounded-md bg-white/5 px-1.5 py-0.5 text-[9px] text-neutral-500">0</span>
+                    </button>
+                    <button onclick="activateNav(this); showView('transactions')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18M7 16l4-5 4 3 5-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Transakcje
+                    </button>
+                    <button onclick="activateNav(this); showView('meetings')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
+                        Spotkania
+                    </button>
+                </div>
+            </div>
+            <div>
+                <p class="px-4 text-[10px] font-semibold uppercase tracking-[.16em] text-neutral-600">Realizacja</p>
+                <div class="mt-1.5 space-y-0.5">
+                    <button onclick="activateNav(this); showView('technical')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+                        Projekty i zadania
+                        <span id="nav-project-count" class="ml-auto rounded-md bg-white/5 px-1.5 py-0.5 text-[9px] text-neutral-500">0</span>
+                    </button>
+                    <button onclick="activateNav(this); showView('time')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>
+                        Czas pracy
+                    </button>
+                    <button onclick="activateNav(this); showView('portals')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"/></svg>
+                        Client Portals
+                    </button>
+                    <button onclick="activateNav(this); showView('finance')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>
+                        Finanse
+                    </button>
+                </div>
+            </div>
+            <div>
+                <p class="px-4 text-[10px] font-semibold uppercase tracking-[.16em] text-neutral-600">Operacje</p>
+                <div class="mt-1.5 space-y-0.5">
+                    <button onclick="activateNav(this); showView('team')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.38.28.6.72.6 1.2v.1h1v4h-.1A1.7 1.7 0 0 0 19.4 15Z" stroke-width="1.3"/></svg>
+                        Aktualny Team
+                    </button>
+                    <button onclick="activateNav(this); showView('processes')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        Processes (SOPs)
+                    </button>
+                    <button onclick="activateNav(this); showView('goals')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+                        Cele
+                    </button>
+                    <button onclick="activateNav(this); showView('documents')" class="nav-item flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-left text-[12px] font-medium text-neutral-400">
+                        <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
+                        Dokumenty
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="border-t border-white/[.06] pt-3">
+            <div class="flex items-center gap-3 rounded-xl px-2.5 py-2">
+                <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-neutral-600 to-neutral-800 text-[10px] font-bold text-white ring-1 ring-white/10">AK</div>
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-[11px] font-semibold text-neutral-200">Anna Kowalska</p>
+                    <p class="truncate text-[9px] text-neutral-600">Administrator</p>
+                </div>
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.7)]"></span>
+            </div>
         </div>
-        <div class="card">
-          <div class="value" id="seconds">00</div>
-          <div class="label">sekund</div>
+    </aside>
+
+    <main id="top" class="min-h-screen lg:pl-[252px]">
+        <header class="sticky top-0 z-20 border-b border-white/[.055] bg-[#08090b]/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+            <div class="mx-auto flex h-[64px] max-w-[1600px] items-center gap-3">
+                <button onclick="toggleSidebar(true)" class="rounded-xl border border-white/[.08] bg-white/[.03] p-2 text-neutral-400 hover:text-white lg:hidden" aria-label="Otwórz menu">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16M4 12h16M4 17h16" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+                <div class="relative max-w-md flex-1">
+                    <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4" stroke-linecap="round"/></svg>
+                    <input id="global-search" type="search" placeholder="Szukaj klienta, projektu lub osoby..." class="h-9 w-full rounded-xl border border-white/[.07] bg-white/[.025] pl-9 pr-4 text-[11px] text-white outline-none placeholder:text-neutral-600 focus:border-violet-500/40 focus:bg-white/[.04]" oninput="applySearch(this.value)">
+                    <span class="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-white/[.08] px-1.5 py-0.5 text-[8px] text-neutral-600 sm:block">⌘ K</span>
+                </div>
+                <div class="ml-auto flex items-center gap-1.5">
+                    <button class="relative rounded-xl p-2 text-neutral-500 transition hover:bg-white/5 hover:text-white" aria-label="Powiadomienia">
+                        <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M13.7 21h-3.4" stroke-linecap="round"/></svg>
+                        <span class="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-[#08090b]"></span>
+                    </button>
+                    <div class="mx-1 h-5 w-px bg-white/[.07]"></div>
+                    <div class="hidden items-center gap-2 sm:flex">
+                        <div class="grid h-7 w-7 place-items-center rounded-full bg-neutral-800 text-[9px] font-bold text-neutral-200 ring-1 ring-white/10">AK</div>
+                        <svg class="h-3 w-3 text-neutral-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 10 5 5 5-5" stroke-width="2" stroke-linecap="round"/></svg>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+            <div id="view-dashboard" class="app-view">
+            <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                <div>
+                    <div class="mb-1.5 flex items-center gap-2 text-[10px] font-medium text-neutral-600">
+                        <span>Pulpity</span>
+                        <span>/</span>
+                        <span class="text-neutral-400">Przegląd</span>
+                    </div>
+                    <h1 class="text-2xl font-semibold tracking-[-.035em] text-white">Dzień dobry, Anno</h1>
+                    <p class="mt-1 text-[11px] text-neutral-500">Oto aktualny obraz sprzedaży i realizacji projektów.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/10 bg-emerald-500/[.055] px-3 py-2 text-[10px] font-medium text-emerald-400">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                        Dane zsynchronizowane
+                    </span>
+                    <button onclick="loadAll(true)" class="rounded-lg border border-white/[.08] bg-white/[.025] p-2 text-neutral-500 transition hover:bg-white/[.06] hover:text-white" title="Odśwież dane">
+                        <svg id="refresh-icon" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <section class="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+                <article class="group rounded-2xl border border-white/[.065] bg-gradient-to-br from-white/[.038] to-transparent p-4 shadow-panel">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[10px] font-medium text-neutral-500">Wszyscy klienci</p>
+                        <span class="grid h-7 w-7 place-items-center rounded-lg bg-violet-500/10 text-violet-400">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 8v6M23 11h-6"/></svg>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-end gap-2"><span id="metric-clients" class="text-[26px] font-semibold leading-none tracking-tight text-white">—</span><span class="mb-0.5 text-[9px] font-medium text-emerald-400">+12% m/m</span></div>
+                </article>
+                <article class="group rounded-2xl border border-white/[.065] bg-gradient-to-br from-white/[.038] to-transparent p-4 shadow-panel">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[10px] font-medium text-neutral-500">Zakwalifikowane leady</p>
+                        <span class="grid h-7 w-7 place-items-center rounded-lg bg-cyan-500/10 text-cyan-400">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-end gap-2"><span id="metric-qualified" class="text-[26px] font-semibold leading-none tracking-tight text-white">—</span><span class="mb-0.5 text-[9px] text-neutral-600">aktywnych szans</span></div>
+                </article>
+                <article class="group rounded-2xl border border-white/[.065] bg-gradient-to-br from-white/[.038] to-transparent p-4 shadow-panel">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[10px] font-medium text-neutral-500">Aktywne projekty</p>
+                        <span class="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-amber-400">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-end gap-2"><span id="metric-projects" class="text-[26px] font-semibold leading-none tracking-tight text-white">—</span><span id="metric-high" class="mb-0.5 text-[9px] font-medium text-rose-400"></span></div>
+                </article>
+                <article class="group rounded-2xl border border-white/[.065] bg-gradient-to-br from-white/[.038] to-transparent p-4 shadow-panel">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[10px] font-medium text-neutral-500">Średnio opłacone</p>
+                        <span class="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v20M17 5.5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke-linecap="round"/></svg>
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-end gap-2"><span id="metric-paid" class="text-[26px] font-semibold leading-none tracking-tight text-white">—</span><span class="mb-0.5 text-[9px] text-neutral-600">wartości projektów</span></div>
+                </article>
+            </section>
+
+            <section id="crm-section" class="scroll-mt-20 overflow-hidden rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                <div class="flex flex-col gap-3 border-b border-white/[.06] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="grid h-8 w-8 place-items-center rounded-xl bg-violet-500/10 text-violet-400">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.87" stroke-linecap="round"/></svg>
+                        </span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-[13px] font-semibold text-white">CRM Sprzedaży</h2>
+                                <span id="crm-count" class="rounded-md bg-white/[.05] px-1.5 py-0.5 text-[8px] font-semibold text-neutral-500">0</span>
+                            </div>
+                            <p class="mt-0.5 text-[9px] text-neutral-600">Leady, kontakty i opiekunowie sprzedaży</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 overflow-x-auto">
+                        <div id="client-filters" class="flex items-center rounded-lg border border-white/[.06] bg-black/20 p-0.5">
+                            <button data-filter="all" onclick="setClientFilter('all')" class="client-filter rounded-md bg-white/[.07] px-2.5 py-1.5 text-[9px] font-medium text-white">Wszystkie</button>
+                            <button data-filter="Nowy lead" onclick="setClientFilter('Nowy lead')" class="client-filter rounded-md px-2.5 py-1.5 text-[9px] font-medium text-neutral-500 hover:text-white">Nowe</button>
+                            <button data-filter="Zakwalifikowany" onclick="setClientFilter('Zakwalifikowany')" class="client-filter rounded-md px-2.5 py-1.5 text-[9px] font-medium text-neutral-500 hover:text-white">Zakwalifikowane</button>
+                        </div>
+                        <button onclick="openClientModal()" class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/[.08] bg-white/[.035] px-2.5 py-2 text-[9px] font-semibold text-neutral-300 hover:bg-white/[.07]">
+                            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round"/></svg>
+                            Dodaj
+                        </button>
+                        <button onclick="toggleBlock('crm-section', this)" class="rounded-lg border border-white/[.06] p-2 text-neutral-600 hover:text-white" title="Zwiń / rozwiń">⌃</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[1050px] table-fixed text-left">
+                        <thead>
+                            <tr class="border-b border-white/[.055] bg-black/10 text-[8px] font-semibold uppercase tracking-[.1em] text-neutral-600">
+                                <th class="w-[20%] px-4 py-3">Firma</th>
+                                <th class="w-[18%] px-3 py-3">Osoba kontaktowa</th>
+                                <th class="w-[14%] px-3 py-3">Status</th>
+                                <th class="w-[15%] px-3 py-3">Właściciel konta</th>
+                                <th class="w-[14%] px-3 py-3">Ostatni kontakt</th>
+                                <th class="w-[15%] px-3 py-3">Tagi</th>
+                                <th class="w-[4%] px-2 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-body">
+                            <tr><td colspan="7" class="px-4 py-10 text-center text-[10px] text-neutral-600">Ładowanie danych...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/[.05] px-4 py-2.5">
+                    <span id="crm-footer" class="text-[9px] text-neutral-600">Wyświetlanie danych</span>
+                    <button onclick="setClientFilter('all')" class="text-[9px] font-medium text-violet-400 hover:text-violet-300">Pokaż wszystkich →</button>
+                </div>
+            </section>
+
+            <section id="projects-section" class="mt-5 scroll-mt-20 overflow-hidden rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                <div class="flex flex-col gap-3 border-b border-white/[.06] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="grid h-8 w-8 place-items-center rounded-xl bg-amber-500/10 text-amber-400">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+                        </span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-[13px] font-semibold text-white">Realizacja</h2>
+                                <span id="projects-count" class="rounded-md bg-white/[.05] px-1.5 py-0.5 text-[8px] font-semibold text-neutral-500">0</span>
+                            </div>
+                            <p class="mt-0.5 text-[9px] text-neutral-600">Projekty, zamówienia i postęp płatności</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 overflow-x-auto">
+                        <div id="project-filters" class="flex items-center rounded-lg border border-white/[.06] bg-black/20 p-0.5">
+                            <button data-filter="all" onclick="setProjectFilter('all')" class="project-filter rounded-md bg-white/[.07] px-2.5 py-1.5 text-[9px] font-medium text-white">Wszystkie</button>
+                            <button data-filter="Wysoki" onclick="setProjectFilter('Wysoki')" class="project-filter rounded-md px-2.5 py-1.5 text-[9px] font-medium text-neutral-500 hover:text-white">Pilne</button>
+                            <button data-filter="Średni" onclick="setProjectFilter('Średni')" class="project-filter rounded-md px-2.5 py-1.5 text-[9px] font-medium text-neutral-500 hover:text-white">Średnie</button>
+                        </div>
+                        <button onclick="openProjectModal()" class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/[.08] bg-white/[.035] px-2.5 py-2 text-[9px] font-semibold text-neutral-300 hover:bg-white/[.07]">
+                            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round"/></svg>
+                            Dodaj
+                        </button>
+                        <button onclick="toggleBlock('projects-section', this)" class="rounded-lg border border-white/[.06] p-2 text-neutral-600 hover:text-white" title="Zwiń / rozwiń">⌃</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[1320px] table-fixed text-left">
+                        <thead>
+                            <tr class="border-b border-white/[.055] bg-black/10 text-[8px] font-semibold uppercase tracking-[.1em] text-neutral-600">
+                                <th class="w-[15%] px-4 py-3">Klient</th>
+                                <th class="w-[15%] px-3 py-3">Projekt</th>
+                                <th class="w-[10%] px-3 py-3">Priorytet</th>
+                                <th class="w-[15%] px-3 py-3">Realizacja</th>
+                                <th class="w-[15%] px-3 py-3">Osoba odpowiedzialna</th>
+                                <th class="w-[14%] px-3 py-3">Aktualnie zapłacone</th>
+                                <th class="w-[10%] px-3 py-3 text-center">Materiał?</th>
+                                <th class="w-[4%] px-3 py-3">URL</th>
+                                <th class="w-[2%] px-2 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="projects-body">
+                            <tr><td colspan="9" class="px-4 py-10 text-center text-[10px] text-neutral-600">Ładowanie danych...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/[.05] px-4 py-2.5">
+                    <span id="projects-footer" class="text-[9px] text-neutral-600">Wyświetlanie danych</span>
+                    <button onclick="setProjectFilter('all')" class="text-[9px] font-medium text-violet-400 hover:text-violet-300">Pokaż wszystkie →</button>
+                </div>
+            </section>
+            </div>
+
+            <section id="view-clients" class="app-view hidden">
+                <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p class="text-[10px] font-medium text-violet-400">CRM Sprzedaży</p>
+                        <h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Klienci</h1>
+                        <p class="mt-1 text-[11px] text-neutral-500">Jedna baza kontrahentów prezentowana w czterech kontekstach.</p>
+                    </div>
+                    <button onclick="openClientModal()" class="rounded-xl bg-violet-600 px-4 py-2.5 text-[10px] font-semibold text-white hover:bg-violet-500">+ Nowy klient</button>
+                </div>
+                <div class="overflow-hidden rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                    <div class="flex items-center gap-1 overflow-x-auto border-b border-white/[.06] px-4 py-3">
+                        <button data-client-view="contacts" onclick="setAdvancedClientView('contacts')" class="advanced-client-tab rounded-lg bg-white/[.07] px-3 py-2 text-[10px] font-medium text-white">Kontakty</button>
+                        <button data-client-view="status" onclick="setAdvancedClientView('status')" class="advanced-client-tab rounded-lg px-3 py-2 text-[10px] font-medium text-neutral-500 hover:text-white">Według statusu</button>
+                        <button data-client-view="priority" onclick="setAdvancedClientView('priority')" class="advanced-client-tab rounded-lg px-3 py-2 text-[10px] font-medium text-neutral-500 hover:text-white">Priorytet</button>
+                        <button data-client-view="high_value" onclick="setAdvancedClientView('high_value')" class="advanced-client-tab rounded-lg px-3 py-2 text-[10px] font-medium text-neutral-500 hover:text-white">Szacowana wartość ≥ 100k</button>
+                    </div>
+                    <div id="advanced-clients-container" class="view-scroll overflow-auto"></div>
+                </div>
+            </section>
+
+            <section id="view-transactions" class="app-view hidden">
+                <div class="mb-5">
+                    <p class="text-[10px] font-medium text-violet-400">CRM Sprzedaży</p>
+                    <h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Transakcje / Lejek sprzedaży</h1>
+                </div>
+                <div class="mb-4 flex items-start gap-3 rounded-2xl border border-violet-500/15 bg-violet-500/[.055] p-4">
+                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-violet-300">◎</span>
+                    <div><p class="text-[11px] font-semibold text-violet-100">Lejek aktualizuje prognozę automatycznie</p><p class="mt-1 text-[9px] leading-relaxed text-violet-300/60">Przeciągaj karty między etapami. Przejście do „Oferta” tworzy zadanie follow-up, a „Gotowe do montażu” powiadamia magazyn.</p></div>
+                </div>
+                <div class="overflow-hidden rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                    <div class="flex items-center justify-between border-b border-white/[.06] px-4 py-3">
+                        <div class="flex gap-1">
+                            <button data-deal-view="table" onclick="setDealView('table')" class="deal-tab rounded-lg bg-white/[.07] px-3 py-2 text-[10px] font-medium text-white">Transakcje (tabela)</button>
+                            <button data-deal-view="kanban" onclick="setDealView('kanban')" class="deal-tab rounded-lg px-3 py-2 text-[10px] font-medium text-neutral-500 hover:text-white">Lejek (kanban)</button>
+                        </div>
+                        <button onclick="openProjectModal()" class="rounded-lg border border-white/[.08] px-3 py-2 text-[9px] font-semibold text-neutral-300 hover:bg-white/5">+ Transakcja</button>
+                    </div>
+                    <div id="deals-container" class="view-scroll overflow-auto"></div>
+                </div>
+            </section>
+
+            <section id="view-meetings" class="app-view hidden">
+                <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                    <div><p class="text-[10px] font-medium text-violet-400">CRM Sprzedaży</p><h1 id="calendar-title" class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Lipiec 2026</h1></div>
+                    <div class="flex items-center gap-2">
+                        <span id="no-date-count" class="rounded-lg border border-white/[.07] bg-white/[.025] px-3 py-2 text-[9px] text-neutral-400">No date · 0</span>
+                        <button onclick="calendarToday()" class="rounded-lg border border-white/[.08] px-3 py-2 text-[9px] font-semibold text-neutral-300 hover:bg-white/5">Today</button>
+                        <a href="/auth/google" class="rounded-lg border border-white/[.08] px-3 py-2 text-[9px] font-semibold text-neutral-300 hover:bg-white/5">Manage in Calendar ↗</a>
+                        <button onclick="quickMeeting()" class="grid h-8 w-8 place-items-center rounded-lg bg-violet-600 text-white hover:bg-violet-500">+</button>
+                    </div>
+                </div>
+                <div class="overflow-auto rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                    <div class="calendar-grid min-w-[805px] border-b border-white/[.055] bg-black/10 text-center text-[8px] font-semibold uppercase tracking-wider text-neutral-600">
+                        <div class="py-3">Pon</div><div class="py-3">Wt</div><div class="py-3">Śr</div><div class="py-3">Czw</div><div class="py-3">Pt</div><div class="py-3">Sob</div><div class="py-3">Ndz</div>
+                    </div>
+                    <div id="calendar-grid" class="calendar-grid min-w-[805px]"></div>
+                </div>
+            </section>
+
+            <section id="view-technical" class="app-view hidden">
+                <div class="mb-5 flex items-end justify-between">
+                    <div><p class="text-[10px] font-medium text-amber-400">Realizacja</p><h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Projekty i zadania</h1><p class="mt-1 text-[11px] text-neutral-500">Techniczny przepływ działu montażowego.</p></div>
+                    <button onclick="openProjectModal()" class="rounded-xl bg-violet-600 px-4 py-2.5 text-[10px] font-semibold text-white hover:bg-violet-500">+ Nowe zlecenie</button>
+                </div>
+                <div class="view-scroll overflow-auto rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-3 shadow-panel">
+                    <div id="technical-kanban" class="kanban-grid"></div>
+                </div>
+            </section>
+
+            <section id="view-time" class="app-view hidden">
+                <div class="mb-5"><p class="text-[10px] font-medium text-amber-400">Realizacja</p><h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Czas pracy</h1></div>
+                <div class="mb-4 overflow-hidden rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                    <div class="flex items-center justify-between border-b border-white/[.06] px-4 py-3">
+                        <div><h2 class="text-[12px] font-semibold text-white">Rejestr sesji</h2><p class="mt-0.5 text-[8px] text-neutral-600">Dzisiaj / Lip 2026</p></div>
+                        <div class="flex gap-1"><button onclick="loadTimeSessions('today')" class="rounded-md bg-white/[.06] px-2.5 py-1.5 text-[8px] text-white">Dzisiaj</button><button onclick="loadTimeSessions('all')" class="rounded-md px-2.5 py-1.5 text-[8px] text-neutral-500">Miesięczny</button></div>
+                    </div>
+                    <div id="time-sessions-container" class="max-h-[240px] overflow-auto"></div>
+                </div>
+                <div class="overflow-hidden rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                    <div class="border-b border-white/[.06] px-4 py-3"><h2 class="text-[12px] font-semibold text-white">Budowa · Tracker</h2><p class="mt-0.5 text-[8px] text-neutral-600">Start i Stop zapisują sesję zalogowanego pracownika.</p></div>
+                    <div class="view-scroll overflow-auto p-3"><div id="time-kanban" class="kanban-grid"></div></div>
+                </div>
+            </section>
+
+            <section id="view-portals" class="app-view hidden">
+                <div class="mb-5"><p class="text-[10px] font-medium text-amber-400">Realizacja</p><h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Client Portals</h1><p class="mt-1 text-[11px] text-neutral-500">Bezpieczne skróty do dokumentów i statusów klientów.</p></div>
+                <div id="portals-grid" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3"></div>
+            </section>
+
+            <section id="view-finance" class="app-view hidden">
+                <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                    <div><p class="text-[10px] font-medium text-emerald-400">Operacje</p><h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Finanse i prognozy</h1><p id="finance-role-label" class="mt-1 text-[11px] text-neutral-500">Panel Admina</p></div>
+                    <span class="rounded-lg border border-white/[.07] px-3 py-2 text-[9px] text-neutral-500">Dane w PLN · aktualizowane na żywo</span>
+                </div>
+                <div id="finance-kpis" class="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-5"></div>
+                <div class="grid gap-4 xl:grid-cols-[1.65fr_.85fr]">
+                    <div class="overflow-hidden rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                        <div class="border-b border-white/[.06] px-4 py-3"><h2 class="text-[12px] font-semibold text-white">Rozliczenia projektów</h2></div>
+                        <div id="finance-table" class="max-h-[430px] overflow-auto"></div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-4 shadow-panel">
+                            <h2 class="text-[11px] font-semibold text-white">Struktura przychodów</h2>
+                            <div class="mx-auto mt-3 max-w-[240px]"><canvas id="finance-chart" height="220"></canvas></div>
+                        </div>
+                        <div class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-4 shadow-panel">
+                            <h2 class="text-[11px] font-semibold text-white">Efektywność handlowców</h2>
+                            <div id="performance-bars" class="mt-4 space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-team" class="app-view hidden">
+                <div class="mb-5"><p class="text-[10px] font-medium text-cyan-400">Operacje</p><h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Aktualny Team</h1><p class="mt-1 text-[11px] text-neutral-500">Struktura zespołu, dane kontaktowe i poziomy dostępu.</p></div>
+                <div class="overflow-auto rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel">
+                    <div id="team-table" class="min-w-[1100px]"></div>
+                </div>
+            </section>
+
+            <section id="view-processes" class="app-view hidden">
+                <div class="mb-5"><p class="text-[10px] font-medium text-cyan-400">Operacje</p><h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Processes (SOPs) & Rekrutacja ATS</h1></div>
+                <div class="grid gap-4 xl:grid-cols-2">
+                    <div class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-4 shadow-panel">
+                        <h2 class="mb-3 text-[12px] font-semibold text-white">Instrukcje krok po kroku</h2>
+                        <div id="processes-list" class="space-y-2"></div>
+                    </div>
+                    <div class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-4 shadow-panel">
+                        <div class="flex items-center justify-between"><h2 class="text-[12px] font-semibold text-white">ATS · Kandydaci</h2><span class="text-[8px] text-neutral-600">PDF · maks. 8 MB</span></div>
+                        <form id="candidate-form" onsubmit="submitCandidate(event)" class="mt-3 grid gap-2 sm:grid-cols-2">
+                            <input name="name" required class="field text-[10px]" placeholder="Imię i nazwisko">
+                            <input name="email" type="email" required class="field text-[10px]" placeholder="E-mail">
+                            <input name="position" required class="field text-[10px]" placeholder="Stanowisko">
+                            <input name="cv" type="file" accept=".pdf" required class="field text-[9px]">
+                            <button class="rounded-xl bg-violet-600 px-3 py-2.5 text-[9px] font-semibold text-white sm:col-span-2">Wyślij kandydaturę</button>
+                        </form>
+                        <div id="candidates-list" class="mt-4 max-h-[430px] space-y-2 overflow-auto"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-goals" class="app-view hidden">
+                <div class="mb-5"><p class="text-[10px] font-medium text-cyan-400">Operacje</p><h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Cele i automatyzacje</h1></div>
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <div class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-4 shadow-panel"><h2 class="text-[12px] font-semibold text-white">Zadania z workflow</h2><div id="workflow-tasks" class="mt-3 space-y-2"></div></div>
+                    <div class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-4 shadow-panel"><h2 class="text-[12px] font-semibold text-white">Powiadomienia systemowe</h2><div id="workflow-notifications" class="mt-3 space-y-2"></div></div>
+                </div>
+            </section>
+
+            <section id="view-documents" class="app-view hidden">
+                <div class="mb-5"><p class="text-[10px] font-medium text-cyan-400">Operacje</p><h1 class="mt-1 text-2xl font-semibold tracking-[-.035em] text-white">Dokumenty i Wiki</h1><p class="mt-1 text-[11px] text-neutral-500">Edycja inline i repozytorium protokołów oraz umów.</p></div>
+                <div class="grid gap-4 xl:grid-cols-[1.35fr_.65fr]">
+                    <div id="wiki-documents" class="space-y-2"></div>
+                    <div>
+                        <form id="document-upload-form" onsubmit="submitDocument(event)" ondragover="event.preventDefault(); this.classList.add('border-violet-500/50')" ondragleave="this.classList.remove('border-violet-500/50')" ondrop="handleDocumentDrop(event)" class="rounded-2xl border border-dashed border-white/[.12] bg-[#0d0f13]/92 p-5 text-center shadow-panel">
+                            <svg class="mx-auto h-6 w-6 text-neutral-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <p class="mt-2 text-[10px] font-semibold text-neutral-300">Przeciągnij PDF lub wybierz plik</p>
+                            <input name="title" required class="field mt-3 text-[9px]" placeholder="Tytuł dokumentu">
+                            <input id="document-file" name="file" type="file" accept=".pdf" required class="field mt-2 text-[9px]">
+                            <input type="hidden" name="category" value="Repozytorium">
+                            <button class="mt-3 rounded-lg bg-violet-600 px-4 py-2 text-[9px] font-semibold text-white">Wgraj dokument</button>
+                        </form>
+                        <div id="repository-list" class="mt-3 space-y-2"></div>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="flex items-center justify-between px-1 pb-2 pt-5 text-[8px] text-neutral-700">
+                <span>© 2026 Nexa Systems</span>
+                <span>CRM & ERP · v2.0 Advanced</span>
+            </footer>
         </div>
-      </section>
     </main>
 
+    <div id="modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onclick="backdropClose(event)">
+        <div class="modal-panel max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-white/[.09] bg-[#101217] shadow-2xl shadow-black/50">
+            <div class="sticky top-0 z-10 flex items-start justify-between border-b border-white/[.065] bg-[#101217]/95 px-5 py-4 backdrop-blur">
+                <div>
+                    <h3 id="modal-title" class="text-[15px] font-semibold text-white">Nowy klient</h3>
+                    <p id="modal-subtitle" class="mt-0.5 text-[9px] text-neutral-600">Uzupełnij dane, aby dodać rekord.</p>
+                </div>
+                <button onclick="closeModal()" class="rounded-lg p-1.5 text-neutral-600 hover:bg-white/5 hover:text-white" aria-label="Zamknij">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+
+            <form id="client-form" class="hidden space-y-4 p-5" onsubmit="submitClient(event)">
+                <input id="client-id" type="hidden">
+                <div>
+                    <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Nazwa firmy *</label>
+                    <input id="client-company" class="field text-[11px]" required minlength="2" placeholder="np. Nova Energy Sp. z o.o.">
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Osoba kontaktowa *</label>
+                        <input id="client-contact" class="field text-[11px]" required minlength="2" placeholder="Imię i nazwisko">
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">E-mail</label>
+                        <input id="client-email" type="email" class="field text-[11px]" placeholder="kontakt@firma.pl">
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Telefon</label>
+                        <div class="flex gap-2"><input id="client-phone" class="field text-[11px]" placeholder="+48 500 000 000"><button id="call-client-button" type="button" onclick="toggleClientCall()" class="hidden shrink-0 rounded-xl border border-emerald-500/15 bg-emerald-500/[.07] px-3 text-emerald-300">☎</button></div>
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Adres</label>
+                        <input id="client-address" class="field text-[11px]" placeholder="Ulica, miasto">
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Status</label>
+                        <select id="client-status" class="field text-[11px]">
+                            <option>Nowy lead</option>
+                            <option>Kontakt</option>
+                            <option>W rozmowie</option>
+                            <option>Aktywny klient</option>
+                            <option>Zakwalifikowany</option>
+                            <option>Niezainteresowany</option>
+                            <option>Nieaktywny klient</option>
+                            <option>Skontaktowano</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Właściciel konta *</label>
+                        <input id="client-owner" class="field text-[11px]" required minlength="2" placeholder="Imię i nazwisko">
+                    </div>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Tagi</label>
+                    <input id="client-tags" class="field text-[11px]" placeholder="PV, MF, Średnia firma">
+                    <p class="mt-1.5 text-[8px] text-neutral-600">Oddziel tagi przecinkami.</p>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Priorytet</label><select id="client-priority" class="field text-[11px]"><option>Niski</option><option selected>Średni</option><option>Wysoki</option></select></div>
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Szacowana wartość</label><input id="client-value" type="number" min="0" step="1000" class="field text-[11px]" placeholder="0 PLN"></div>
+                </div>
+                <div id="client-advanced-panel" class="hidden grid gap-4 border-t border-white/[.06] pt-4 lg:grid-cols-2">
+                    <div>
+                        <div class="mb-2 flex items-center justify-between"><h4 class="text-[10px] font-semibold text-white">Notatki i kolejne kroki</h4><span class="text-[8px] text-neutral-600">auto-save po opuszczeniu pola</span></div>
+                        <textarea id="client-notes" onblur="autoSaveClientNotes()" class="field min-h-[180px] resize-y text-[10px]" placeholder="🎯 Cele&#10;📌 Punkty dyskusji&#10;✅ Zadania&#10;📅 Kolejne kroki"></textarea>
+                        <div class="mt-2 rounded-xl border border-dashed border-white/[.08] p-3 text-center text-[8px] text-neutral-600">Załączniki klienta · przeciągnij plik</div>
+                    </div>
+                    <div>
+                        <div class="mb-2 flex items-center justify-between"><h4 class="text-[10px] font-semibold text-white">Unified Inbox</h4><span id="call-timer" class="text-[9px] font-semibold text-emerald-400"></span></div>
+                        <div id="client-messages" class="h-[180px] space-y-2 overflow-auto rounded-xl border border-white/[.06] bg-black/15 p-2"></div>
+                        <div class="mt-2 flex gap-2"><select id="message-channel" class="field w-24 text-[9px]"><option value="email">E-mail</option><option value="sms">SMS</option></select><input id="message-content" class="field text-[9px]" placeholder="Napisz wiadomość..."><button type="button" onclick="sendClientMessage()" class="rounded-xl bg-violet-600 px-3 text-[9px] font-semibold text-white">Wyślij</button></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/[.06] pt-4">
+                    <button id="delete-client-button" type="button" class="hidden text-[9px] font-medium text-rose-400 hover:text-rose-300" onclick="deleteCurrentClient()">Usuń klienta</button>
+                    <div class="ml-auto flex gap-2">
+                        <button type="button" onclick="closeModal()" class="rounded-xl border border-white/[.08] px-4 py-2.5 text-[10px] font-semibold text-neutral-400 hover:bg-white/5 hover:text-white">Anuluj</button>
+                        <button id="save-client-button" type="submit" class="rounded-xl bg-violet-600 px-4 py-2.5 text-[10px] font-semibold text-white shadow-lg shadow-violet-950/30 hover:bg-violet-500">Dodaj klienta</button>
+                    </div>
+                </div>
+            </form>
+
+            <form id="project-form" class="hidden space-y-4 p-5" onsubmit="submitProject(event)">
+                <input id="project-id" type="hidden">
+                <div>
+                    <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Klient *</label>
+                    <select id="project-client" class="field text-[11px]" required></select>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Nazwa projektu *</label>
+                    <input id="project-name" class="field text-[11px]" required minlength="2" placeholder="np. PV + pompa ciepła">
+                </div>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Etap transakcji</label><select id="project-stage" class="field text-[10px]"><option>Rozpoznanie</option><option>Zakwalifikowane</option><option>Oferta</option><option>Negocjacje</option><option>Gotowe do montażu</option><option>Zamknięte</option><option>Utracone</option></select></div>
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Data</label><input id="project-date" type="date" class="field text-[10px]"></div>
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Place</label><input id="project-place" class="field text-[10px]" placeholder="Lokalizacja"></div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Priorytet</label>
+                        <select id="project-priority" class="field text-[11px]">
+                            <option>Niski</option>
+                            <option selected>Średni</option>
+                            <option>Wysoki</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Status realizacji</label>
+                        <select id="project-realization" class="field text-[11px]">
+                            <option>Gotowe do terminu</option>
+                            <option>Gotowe do sprawdzenia</option>
+                            <option selected>Puste</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Osoba odpowiedzialna *</label>
+                    <input id="project-responsible" class="field text-[11px]" required minlength="2" placeholder="E-mail lub imię i nazwisko">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Sprzedawca</label>
+                    <input id="project-salesperson" class="field text-[11px]" placeholder="E-mail lub imię i nazwisko">
+                </div>
+                <div class="rounded-xl border border-white/[.065] bg-black/15 p-3">
+                    <div class="mb-2 flex items-center justify-between"><div><h4 class="text-[10px] font-semibold text-white">Katalog produktów i cen (CPQ)</h4><p class="mt-0.5 text-[8px] text-neutral-600">Wybór automatycznie liczy koszt i sugerowaną wartość.</p></div><span id="cpq-summary" class="text-[9px] font-semibold text-violet-300">0 pozycji</span></div>
+                    <div id="product-catalog" class="grid max-h-[150px] gap-2 overflow-auto sm:grid-cols-2"></div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Wartość transakcji</label><input id="project-value" type="number" min="0" step="100" class="field text-[10px]" oninput="updateProfitPreview()"></div>
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Koszt materiałów</label><input id="project-materials-cost" type="number" min="0" step="100" class="field text-[10px]" oninput="updateProfitPreview()"></div>
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Profit</label><div id="project-profit" class="field text-[10px] text-emerald-300">0 PLN</div></div>
+                </div>
+                <div>
+                    <div class="mb-1.5 flex items-center justify-between">
+                        <label class="text-[9px] font-medium text-neutral-400">Aktualnie zapłacone</label>
+                        <span id="paid-preview" class="text-[10px] font-semibold text-violet-400">0%</span>
+                    </div>
+                    <input id="project-paid" type="range" min="0" max="100" value="0" class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-neutral-800 accent-violet-500" oninput="document.getElementById('paid-preview').textContent = this.value + '%'">
+                </div>
+                <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                    <div>
+                        <label class="mb-1.5 block text-[9px] font-medium text-neutral-400">URL do dokumentów</label>
+                        <input id="project-url" type="url" class="field text-[11px]" placeholder="https://drive.google.com/...">
+                    </div>
+                    <label class="flex h-[41px] cursor-pointer items-center gap-2 rounded-xl border border-white/[.08] bg-white/[.02] px-3 text-[9px] text-neutral-400">
+                        <input id="project-material" type="checkbox" class="h-3.5 w-3.5 rounded border-neutral-700 bg-neutral-900 accent-violet-500">
+                        Materiał zamówiony
+                    </label>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Start deadline</label><input id="project-start-deadline" type="date" class="field text-[10px]"></div>
+                    <div><label class="mb-1.5 block text-[9px] font-medium text-neutral-400">Koniec deadline</label><input id="project-end-deadline" type="date" class="field text-[10px]"></div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/[.06] pt-4">
+                    <div class="flex items-center gap-3"><button id="delete-project-button" type="button" class="hidden text-[9px] font-medium text-rose-400 hover:text-rose-300" onclick="deleteCurrentProject()">Usuń projekt</button><button id="modal-timer-button" type="button" class="hidden rounded-lg border border-emerald-500/15 bg-emerald-500/[.07] px-3 py-2 text-[9px] font-semibold text-emerald-300" onclick="toggleTimerFromModal()">▶ Start pracy</button></div>
+                    <div class="ml-auto flex gap-2">
+                        <button type="button" onclick="closeModal()" class="rounded-xl border border-white/[.08] px-4 py-2.5 text-[10px] font-semibold text-neutral-400 hover:bg-white/5 hover:text-white">Anuluj</button>
+                        <button id="save-project-button" type="submit" class="rounded-xl bg-violet-600 px-4 py-2.5 text-[10px] font-semibold text-white shadow-lg shadow-violet-950/30 hover:bg-violet-500">Dodaj projekt</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" class="pointer-events-none fixed bottom-5 right-5 z-[70] flex w-[min(360px,calc(100vw-2.5rem))] flex-col gap-2"></div>
+
     <script>
-      const countdownTarget = Date.now() + 30 * 24 * 60 * 60 * 1000;
-      const targetDate = "2026-03-11T18:00:00";
-      const countdownTarget = new Date(targetDate).getTime();
+        var state = {
+            clients: [],
+            projects: [],
+            summary: {},
+            session: null,
+            products: [],
+            meetings: [],
+            timeSessions: [],
+            finance: null,
+            employees: [],
+            processes: [],
+            candidates: [],
+            documents: [],
+            currentView: "dashboard",
+            advancedClientView: "contacts",
+            dealView: "table",
+            calendarDate: new Date(2026, 6, 1),
+            activeCall: null,
+            callInterval: null,
+            selectedProducts: {},
+            financeChart: null,
+            search: "",
+            clientFilter: "all",
+            projectFilter: "all"
+        };
 
-      const elements = {
-        days: document.getElementById("days"),
-        hours: document.getElementById("hours"),
-        minutes: document.getElementById("minutes"),
-        seconds: document.getElementById("seconds"),
-      };
+        function escapeHTML(value) {
+            return String(value == null ? "" : value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
-      const formatNumber = (value) => value.toString().padStart(2, "0");
+        async function api(url, options) {
+            var config = options || {};
+            config.headers = Object.assign({ "Content-Type": "application/json" }, config.headers || {});
+            var response = await fetch(url, config);
+            if (!response.ok) {
+                var error = {};
+                try { error = await response.json(); } catch (_) {}
+                var detail = error.detail;
+                if (Array.isArray(detail)) detail = detail[0] && detail[0].msg;
+                throw new Error(detail || "Nie udało się wykonać operacji.");
+            }
+            if (response.status === 204) return null;
+            return response.json();
+        }
 
-      const updateCountdown = () => {
-        const now = Date.now();
-        const diff = Math.max(countdownTarget - now, 0);
+        async function loadAll(showNotification) {
+            var refresh = document.getElementById("refresh-icon");
+            refresh.classList.add("animate-spin");
+            try {
+                var results = await Promise.all([
+                    api("/api/clients"),
+                    api("/api/projects"),
+                    api("/api/summary"),
+                    api("/api/session"),
+                    api("/api/products")
+                ]);
+                state.clients = results[0];
+                state.projects = results[1];
+                state.summary = results[2];
+                state.session = results[3];
+                state.products = results[4];
+                renderAll();
+                if (showNotification) toast("Dane zostały odświeżone", "success");
+            } catch (error) {
+                toast(error.message, "error");
+            } finally {
+                refresh.classList.remove("animate-spin");
+            }
+        }
 
-        const totalSeconds = Math.floor(diff / 1000);
-        const days = Math.floor(totalSeconds / 86400);
-        const hours = Math.floor((totalSeconds % 86400) / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-      
+        function renderAll() {
+            renderSummary();
+            renderClients();
+            renderProjects();
+            fillClientOptions();
+            renderAdvancedClients();
+            renderDeals();
+            renderTechnicalKanban();
+            renderTimeKanban();
+            renderPortals();
+            renderProductCatalog();
+        }
 
-        elements.days.textContent = days;
-        elements.hours.textContent = formatNumber(hours);
-        elements.minutes.textContent = formatNumber(minutes);
-        elements.seconds.textContent = formatNumber(seconds);
-      };
+        function renderSummary() {
+            document.getElementById("metric-clients").textContent = state.summary.clients == null ? "—" : state.summary.clients;
+            document.getElementById("metric-qualified").textContent = state.summary.qualified == null ? "—" : state.summary.qualified;
+            document.getElementById("metric-projects").textContent = state.summary.projects == null ? "—" : state.summary.projects;
+            document.getElementById("metric-high").textContent = state.summary.high_priority ? state.summary.high_priority + " pilne" : "brak pilnych";
+            document.getElementById("metric-paid").textContent = state.summary.average_paid == null ? "—" : state.summary.average_paid + "%";
+            document.getElementById("nav-client-count").textContent = state.summary.clients || 0;
+            document.getElementById("nav-project-count").textContent = state.summary.projects || 0;
+        }
 
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
+        function filteredClients() {
+            var query = state.search.toLocaleLowerCase("pl");
+            return state.clients.filter(function (client) {
+                var filterMatch = state.clientFilter === "all" || client.status === state.clientFilter;
+                var haystack = [client.company, client.contact_name, client.owner, (client.tags || []).join(" ")].join(" ").toLocaleLowerCase("pl");
+                return filterMatch && (!query || haystack.indexOf(query) !== -1);
+            });
+        }
+
+        function filteredProjects() {
+            var query = state.search.toLocaleLowerCase("pl");
+            return state.projects.filter(function (project) {
+                var filterMatch = state.projectFilter === "all" || project.priority === state.projectFilter;
+                var haystack = [project.client_name, project.project_name, project.responsible].join(" ").toLocaleLowerCase("pl");
+                return filterMatch && (!query || haystack.indexOf(query) !== -1);
+            });
+        }
+
+        function initials(name) {
+            return String(name || "?").split(/\s+/).slice(0, 2).map(function (part) { return part.charAt(0); }).join("").toUpperCase();
+        }
+
+        function avatarTone(value) {
+            var tones = [
+                "bg-violet-500/10 text-violet-300 ring-violet-500/15",
+                "bg-cyan-500/10 text-cyan-300 ring-cyan-500/15",
+                "bg-amber-500/10 text-amber-300 ring-amber-500/15",
+                "bg-emerald-500/10 text-emerald-300 ring-emerald-500/15",
+                "bg-rose-500/10 text-rose-300 ring-rose-500/15"
+            ];
+            var sum = Array.from(String(value)).reduce(function (acc, character) { return acc + character.charCodeAt(0); }, 0);
+            return tones[sum % tones.length];
+        }
+
+        function formatDate(value) {
+            if (!value) return "Brak";
+            var date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return new Intl.DateTimeFormat("pl-PL", {
+                day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+            }).format(date);
+        }
+
+        function relativeDate(value) {
+            if (!value) return "";
+            var diffHours = Math.round((Date.now() - new Date(value).getTime()) / 3600000);
+            if (diffHours < 1) return "przed chwilą";
+            if (diffHours < 24) return diffHours + " godz. temu";
+            var days = Math.floor(diffHours / 24);
+            return days === 1 ? "wczoraj" : days + " dni temu";
+        }
+
+        function statusClasses(status) {
+            return {
+                "Nowy lead": "border-violet-500/15 bg-violet-500/[.08] text-violet-300",
+                "Zakwalifikowany": "border-emerald-500/15 bg-emerald-500/[.08] text-emerald-300",
+                "Skontaktowano": "border-cyan-500/15 bg-cyan-500/[.08] text-cyan-300"
+            }[status] || "border-white/10 bg-white/5 text-neutral-400";
+        }
+
+        function priorityClasses(priority) {
+            return {
+                "Niski": "border-sky-500/15 bg-sky-500/[.07] text-sky-300",
+                "Średni": "border-amber-500/15 bg-amber-500/[.08] text-amber-300",
+                "Wysoki": "border-rose-500/15 bg-rose-500/[.08] text-rose-300"
+            }[priority] || "border-white/10 bg-white/5 text-neutral-400";
+        }
+
+        function realizationClasses(status) {
+            return {
+                "Gotowe do terminu": "text-emerald-300",
+                "Gotowe do sprawdzenia": "text-amber-300",
+                "Puste": "text-neutral-500"
+            }[status] || "text-neutral-500";
+        }
+
+        function selectOptions(values, selected) {
+            return values.map(function (value) {
+                return '<option value="' + escapeHTML(value) + '"' + (value === selected ? " selected" : "") + ">" + escapeHTML(value) + "</option>";
+            }).join("");
+        }
+
+        function renderClients() {
+            var list = filteredClients();
+            var body = document.getElementById("clients-body");
+            document.getElementById("crm-count").textContent = list.length;
+            document.getElementById("crm-footer").textContent = "Wyświetlono " + list.length + " z " + state.clients.length + " klientów";
+            if (!list.length) {
+                body.innerHTML = '<tr><td colspan="7" class="px-4 py-12 text-center"><div class="mx-auto grid h-9 w-9 place-items-center rounded-xl bg-white/[.03] text-neutral-600"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></div><p class="mt-2 text-[10px] text-neutral-500">Brak klientów spełniających kryteria</p></td></tr>';
+                return;
+            }
+            body.innerHTML = list.map(function (client) {
+                var tags = (client.tags || []).map(function (tag) {
+                    return '<span class="rounded-md border border-white/[.06] bg-white/[.035] px-1.5 py-0.5 text-[8px] font-medium text-neutral-400">' + escapeHTML(tag) + "</span>";
+                }).join("");
+                return [
+                    '<tr class="table-row border-b border-white/[.045] last:border-0">',
+                    '<td class="px-4 py-3"><div class="flex items-center gap-2.5"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-lg ring-1 ' + avatarTone(client.company) + ' text-[8px] font-bold">' + escapeHTML(initials(client.company)) + '</span><div class="min-w-0"><p class="truncate text-[10px] font-semibold text-neutral-200">' + escapeHTML(client.company) + '</p><p class="mt-0.5 text-[8px] text-neutral-600">ID · ' + String(client.id).padStart(4, "0") + "</p></div></div></td>",
+                    '<td class="px-3 py-3"><p class="truncate text-[10px] font-medium text-neutral-300">' + escapeHTML(client.contact_name) + '</p><p class="mt-0.5 truncate text-[8px] text-neutral-600">' + escapeHTML(client.contact_email || "Brak e-maila") + "</p></td>",
+                    '<td class="px-3 py-3"><select aria-label="Status klienta" onchange="quickUpdateClient(' + client.id + ', this, &quot;status&quot;)" class="max-w-full cursor-pointer appearance-none rounded-lg border px-2 py-1.5 text-[8px] font-semibold outline-none ' + statusClasses(client.status) + '">' + selectOptions(["Nowy lead", "Kontakt", "W rozmowie", "Aktywny klient", "Zakwalifikowany", "Niezainteresowany", "Nieaktywny klient", "Skontaktowano"], client.status) + "</select></td>",
+                    '<td class="px-3 py-3"><div class="flex items-center gap-2"><span class="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-neutral-800 text-[7px] font-bold text-neutral-400 ring-1 ring-white/[.06]">' + escapeHTML(initials(client.owner)) + '</span><span class="truncate text-[9px] text-neutral-400">' + escapeHTML(client.owner) + "</span></div></td>",
+                    '<td class="px-3 py-3"><p class="text-[9px] text-neutral-400">' + escapeHTML(formatDate(client.last_contact)) + '</p><p class="mt-0.5 text-[8px] text-neutral-700">' + escapeHTML(relativeDate(client.last_contact)) + "</p></td>",
+                    '<td class="px-3 py-3"><div class="flex flex-wrap gap-1">' + (tags || '<span class="text-[8px] text-neutral-700">—</span>') + "</div></td>",
+                    '<td class="px-2 py-3 text-right"><button onclick="openClientModal(' + client.id + ')" class="rounded-lg p-1.5 text-neutral-600 hover:bg-white/5 hover:text-white" aria-label="Edytuj klienta"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button></td>',
+                    "</tr>"
+                ].join("");
+            }).join("");
+        }
+
+        function renderProjects() {
+            var list = filteredProjects();
+            var body = document.getElementById("projects-body");
+            document.getElementById("projects-count").textContent = list.length;
+            document.getElementById("projects-footer").textContent = "Wyświetlono " + list.length + " z " + state.projects.length + " projektów";
+            if (!list.length) {
+                body.innerHTML = '<tr><td colspan="9" class="px-4 py-12 text-center"><div class="mx-auto grid h-9 w-9 place-items-center rounded-xl bg-white/[.03] text-neutral-600"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></div><p class="mt-2 text-[10px] text-neutral-500">Brak projektów spełniających kryteria</p></td></tr>';
+                return;
+            }
+            body.innerHTML = list.map(function (project) {
+                var paid = Math.max(0, Math.min(100, Number(project.paid_percent) || 0));
+                var progressColor = paid >= 75 ? "bg-emerald-500" : paid >= 35 ? "bg-violet-500" : "bg-amber-500";
+                var urlCell = project.document_url
+                    ? '<a href="' + escapeHTML(project.document_url) + '" target="_blank" rel="noopener" class="grid h-7 w-7 place-items-center rounded-lg border border-white/[.07] bg-white/[.025] text-neutral-500 hover:border-violet-500/30 hover:text-violet-300" title="Otwórz dokumenty"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 3h7v7M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>'
+                    : '<span class="grid h-7 w-7 place-items-center text-neutral-800">—</span>';
+                return [
+                    '<tr class="table-row border-b border-white/[.045] last:border-0">',
+                    '<td class="px-4 py-3"><div class="flex items-center gap-2.5"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-lg ring-1 ' + avatarTone(project.client_name) + ' text-[8px] font-bold">' + escapeHTML(initials(project.client_name)) + '</span><p class="truncate text-[10px] font-semibold text-neutral-300">' + escapeHTML(project.client_name) + "</p></div></td>",
+                    '<td class="px-3 py-3"><p class="truncate text-[10px] font-medium text-neutral-200">' + escapeHTML(project.project_name) + '</p><p class="mt-0.5 text-[8px] text-neutral-700">PRJ-' + String(project.id).padStart(3, "0") + "</p></td>",
+                    '<td class="px-3 py-3"><select aria-label="Priorytet projektu" onchange="quickUpdateProject(' + project.id + ', this, &quot;priority&quot;)" class="cursor-pointer appearance-none rounded-lg border px-2 py-1.5 text-[8px] font-semibold outline-none ' + priorityClasses(project.priority) + '">' + selectOptions(["Niski", "Średni", "Wysoki"], project.priority) + "</select></td>",
+                    '<td class="px-3 py-3"><div class="flex items-center gap-2"><span class="h-1.5 w-1.5 shrink-0 rounded-full ' + (project.realization_status === "Gotowe do terminu" ? "bg-emerald-400" : project.realization_status === "Gotowe do sprawdzenia" ? "bg-amber-400" : "bg-neutral-700") + '"></span><select aria-label="Status realizacji" onchange="quickUpdateProject(' + project.id + ', this, &quot;realization_status&quot;)" class="min-w-0 cursor-pointer appearance-none bg-transparent text-[8px] font-medium outline-none ' + realizationClasses(project.realization_status) + '">' + selectOptions(["Gotowe do terminu", "DC", "PC", "AC", "WP", "Gotowe do sprawdzenia", "Puste"], project.realization_status) + "</select></div></td>",
+                    '<td class="px-3 py-3"><div class="flex items-center gap-2"><span class="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-neutral-800 text-[7px] font-bold text-neutral-400 ring-1 ring-white/[.06]">' + escapeHTML(initials(project.responsible)) + '</span><span class="truncate text-[9px] text-neutral-400">' + escapeHTML(project.responsible) + "</span></div></td>",
+                    '<td class="px-3 py-3"><button onclick="openProjectModal(' + project.id + ')" class="w-full text-left"><div class="mb-1.5 flex items-center justify-between"><span class="text-[9px] font-semibold text-neutral-300">' + paid + '%</span><span class="text-[7px] text-neutral-700">100%</span></div><div class="h-1.5 overflow-hidden rounded-full bg-neutral-800"><div class="h-full rounded-full ' + progressColor + '" style="width:' + paid + '%"></div></div></button></td>',
+                    '<td class="px-3 py-3 text-center"><label class="inline-flex cursor-pointer items-center"><input type="checkbox" ' + (project.material_ordered ? "checked" : "") + ' onchange="quickUpdateProject(' + project.id + ', this, &quot;material_ordered&quot;)" class="peer sr-only"><span class="grid h-[18px] w-[18px] place-items-center rounded-md border border-neutral-700 bg-neutral-900 text-transparent transition peer-checked:border-violet-500 peer-checked:bg-violet-600 peer-checked:text-white"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 4 4L19 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label></td>',
+                    '<td class="px-3 py-3">' + urlCell + "</td>",
+                    '<td class="px-2 py-3 text-right"><button onclick="openProjectModal(' + project.id + ')" class="rounded-lg p-1.5 text-neutral-600 hover:bg-white/5 hover:text-white" aria-label="Edytuj projekt"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button></td>',
+                    "</tr>"
+                ].join("");
+            }).join("");
+        }
+
+        async function quickUpdateClient(id, element, field) {
+            try {
+                var payload = {};
+                payload[field] = element.type === "checkbox" ? element.checked : element.value;
+                await api("/api/clients/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+                await loadAll(false);
+                toast("Zaktualizowano klienta", "success");
+            } catch (error) {
+                toast(error.message, "error");
+                await loadAll(false);
+            }
+        }
+
+        async function quickUpdateProject(id, element, field) {
+            try {
+                var payload = {};
+                payload[field] = element.type === "checkbox" ? element.checked : element.value;
+                await api("/api/projects/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+                await loadAll(false);
+                toast("Zaktualizowano projekt", "success");
+            } catch (error) {
+                toast(error.message, "error");
+                await loadAll(false);
+            }
+        }
+
+        function setClientFilter(filter) {
+            state.clientFilter = filter;
+            document.querySelectorAll(".client-filter").forEach(function (button) {
+                var active = button.dataset.filter === filter;
+                button.classList.toggle("bg-white/[.07]", active);
+                button.classList.toggle("text-white", active);
+                button.classList.toggle("text-neutral-500", !active);
+            });
+            renderClients();
+        }
+
+        function setProjectFilter(filter) {
+            state.projectFilter = filter;
+            document.querySelectorAll(".project-filter").forEach(function (button) {
+                var active = button.dataset.filter === filter;
+                button.classList.toggle("bg-white/[.07]", active);
+                button.classList.toggle("text-white", active);
+                button.classList.toggle("text-neutral-500", !active);
+            });
+            renderProjects();
+        }
+
+        function applySearch(value) {
+            state.search = value.trim();
+            renderClients();
+            renderProjects();
+        }
+
+        function fillClientOptions(selectedId) {
+            var select = document.getElementById("project-client");
+            if (!select) return;
+            var current = selectedId || select.value;
+            select.innerHTML = state.clients.map(function (client) {
+                return '<option value="' + client.id + '"' + (String(client.id) === String(current) ? " selected" : "") + ">" + escapeHTML(client.company) + "</option>";
+            }).join("");
+        }
+
+        function showModalForm(type) {
+            var isClient = type === "client";
+            document.getElementById("client-form").classList.toggle("hidden", !isClient);
+            document.getElementById("project-form").classList.toggle("hidden", isClient);
+            document.getElementById("modal").classList.remove("hidden");
+            document.getElementById("modal").classList.add("flex");
+            document.body.style.overflow = "hidden";
+        }
+
+        function openClientModal(id) {
+            var client = id ? state.clients.find(function (item) { return item.id === id; }) : null;
+            document.getElementById("client-form").reset();
+            document.getElementById("client-id").value = client ? client.id : "";
+            document.getElementById("client-company").value = client ? client.company : "";
+            document.getElementById("client-contact").value = client ? client.contact_name : "";
+            document.getElementById("client-email").value = client ? client.contact_email : "";
+            document.getElementById("client-phone").value = client ? client.phone : "";
+            document.getElementById("client-address").value = client ? client.address : "";
+            document.getElementById("client-status").value = client ? client.status : "Nowy lead";
+            document.getElementById("client-owner").value = client ? client.owner : "Anna Kowalska";
+            document.getElementById("client-tags").value = client ? (client.tags || []).join(", ") : "";
+            document.getElementById("client-priority").value = client ? client.priority : "Średni";
+            document.getElementById("client-value").value = client ? client.estimated_value : 0;
+            document.getElementById("client-notes").value = client ? client.notes : "";
+            document.getElementById("client-advanced-panel").classList.toggle("hidden", !client);
+            document.getElementById("call-client-button").classList.toggle("hidden", !client || !client.phone);
+            document.getElementById("modal-title").textContent = client ? "Edytuj klienta" : "Nowy klient";
+            document.getElementById("modal-subtitle").textContent = client ? "Zaktualizuj dane kontaktu i etap sprzedaży." : "Dodaj nową firmę do procesu sprzedaży.";
+            document.getElementById("save-client-button").textContent = client ? "Zapisz zmiany" : "Dodaj klienta";
+            document.getElementById("delete-client-button").classList.toggle("hidden", !client);
+            showModalForm("client");
+            if (client) loadClientMessages(client.id);
+            setTimeout(function () { document.getElementById("client-company").focus(); }, 100);
+        }
+
+        function openProjectModal(id) {
+            if (!state.clients.length) {
+                toast("Najpierw dodaj klienta", "error");
+                return;
+            }
+            var project = id ? state.projects.find(function (item) { return item.id === id; }) : null;
+            document.getElementById("project-form").reset();
+            document.getElementById("project-id").value = project ? project.id : "";
+            fillClientOptions(project ? project.client_id : null);
+            document.getElementById("project-name").value = project ? project.project_name : "";
+            document.getElementById("project-stage").value = project ? project.deal_stage : "Rozpoznanie";
+            document.getElementById("project-date").value = project ? project.deal_date : new Date().toISOString().slice(0, 10);
+            document.getElementById("project-place").value = project ? project.place : "";
+            document.getElementById("project-priority").value = project ? project.priority : "Średni";
+            document.getElementById("project-realization").value = project ? project.realization_status : "Puste";
+            document.getElementById("project-responsible").value = project ? project.responsible : "Anna Kowalska";
+            document.getElementById("project-salesperson").value = project ? project.salesperson : (state.session ? state.session.email : "");
+            document.getElementById("project-value").value = project ? project.value_pln : 0;
+            document.getElementById("project-materials-cost").value = project ? project.materials_cost : 0;
+            document.getElementById("project-paid").value = project ? project.paid_percent : 0;
+            document.getElementById("paid-preview").textContent = (project ? project.paid_percent : 0) + "%";
+            document.getElementById("project-material").checked = project ? project.material_ordered : false;
+            document.getElementById("project-url").value = project ? project.document_url : "";
+            document.getElementById("project-start-deadline").value = project ? project.start_deadline : "";
+            document.getElementById("project-end-deadline").value = project ? project.end_deadline : "";
+            state.selectedProducts = {};
+            (project && project.product_items || []).forEach(function (item) { state.selectedProducts[item.id] = item.quantity || 1; });
+            renderProductCatalog();
+            updateProfitPreview();
+            document.getElementById("modal-title").textContent = project ? "Edytuj projekt" : "Nowe zlecenie";
+            document.getElementById("modal-subtitle").textContent = project ? "Zaktualizuj realizację, płatność lub dokumenty." : "Dodaj projekt powiązany z klientem CRM.";
+            document.getElementById("save-project-button").textContent = project ? "Zapisz zmiany" : "Dodaj projekt";
+            document.getElementById("delete-project-button").classList.toggle("hidden", !project);
+            document.getElementById("modal-timer-button").classList.toggle("hidden", !project);
+            showModalForm("project");
+            setTimeout(function () { document.getElementById("project-name").focus(); }, 100);
+        }
+
+        function closeModal() {
+            document.getElementById("modal").classList.add("hidden");
+            document.getElementById("modal").classList.remove("flex");
+            document.body.style.overflow = "";
+        }
+
+        function backdropClose(event) {
+            if (event.target.id === "modal") closeModal();
+        }
+
+        async function submitClient(event) {
+            event.preventDefault();
+            var id = document.getElementById("client-id").value;
+            var button = document.getElementById("save-client-button");
+            var original = button.textContent;
+            var payload = {
+                company: document.getElementById("client-company").value.trim(),
+                contact_name: document.getElementById("client-contact").value.trim(),
+                contact_email: document.getElementById("client-email").value.trim(),
+                phone: document.getElementById("client-phone").value.trim(),
+                address: document.getElementById("client-address").value.trim(),
+                status: document.getElementById("client-status").value,
+                owner: document.getElementById("client-owner").value.trim(),
+                tags: document.getElementById("client-tags").value.split(",").map(function (tag) { return tag.trim(); }).filter(Boolean),
+                priority: document.getElementById("client-priority").value,
+                estimated_value: Number(document.getElementById("client-value").value) || 0,
+                notes: document.getElementById("client-notes").value
+            };
+            button.disabled = true;
+            button.textContent = "Zapisywanie...";
+            try {
+                await api(id ? "/api/clients/" + id : "/api/clients", {
+                    method: id ? "PATCH" : "POST",
+                    body: JSON.stringify(payload)
+                });
+                closeModal();
+                await loadAll(false);
+                toast(id ? "Zapisano zmiany klienta" : "Dodano nowego klienta", "success");
+            } catch (error) {
+                toast(error.message, "error");
+            } finally {
+                button.disabled = false;
+                button.textContent = original;
+            }
+        }
+
+        async function submitProject(event) {
+            event.preventDefault();
+            var id = document.getElementById("project-id").value;
+            var button = document.getElementById("save-project-button");
+            var original = button.textContent;
+            var payload = {
+                client_id: Number(document.getElementById("project-client").value),
+                project_name: document.getElementById("project-name").value.trim(),
+                priority: document.getElementById("project-priority").value,
+                realization_status: document.getElementById("project-realization").value,
+                deal_stage: document.getElementById("project-stage").value,
+                responsible: document.getElementById("project-responsible").value.trim(),
+                salesperson: document.getElementById("project-salesperson").value.trim(),
+                place: document.getElementById("project-place").value.trim(),
+                deal_date: document.getElementById("project-date").value,
+                value_pln: Number(document.getElementById("project-value").value) || 0,
+                materials_cost: Number(document.getElementById("project-materials-cost").value) || 0,
+                paid_percent: Number(document.getElementById("project-paid").value),
+                material_ordered: document.getElementById("project-material").checked,
+                document_url: document.getElementById("project-url").value.trim(),
+                product_items: selectedProductPayload(),
+                start_deadline: document.getElementById("project-start-deadline").value,
+                end_deadline: document.getElementById("project-end-deadline").value
+            };
+            button.disabled = true;
+            button.textContent = "Zapisywanie...";
+            try {
+                await api(id ? "/api/projects/" + id : "/api/projects", {
+                    method: id ? "PATCH" : "POST",
+                    body: JSON.stringify(payload)
+                });
+                closeModal();
+                await loadAll(false);
+                toast(id ? "Zapisano zmiany projektu" : "Dodano nowe zlecenie", "success");
+            } catch (error) {
+                toast(error.message, "error");
+            } finally {
+                button.disabled = false;
+                button.textContent = original;
+            }
+        }
+
+        async function deleteCurrentClient() {
+            var id = document.getElementById("client-id").value;
+            if (!id || !confirm("Usunąć klienta i wszystkie jego projekty?")) return;
+            try {
+                await api("/api/clients/" + id, { method: "DELETE" });
+                closeModal();
+                await loadAll(false);
+                toast("Klient został usunięty", "success");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function deleteCurrentProject() {
+            var id = document.getElementById("project-id").value;
+            if (!id || !confirm("Usunąć ten projekt?")) return;
+            try {
+                await api("/api/projects/" + id, { method: "DELETE" });
+                closeModal();
+                await loadAll(false);
+                toast("Projekt został usunięty", "success");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function toast(message, type) {
+            var container = document.getElementById("toast-container");
+            var item = document.createElement("div");
+            var success = type !== "error";
+            item.className = "toast pointer-events-auto flex items-center gap-3 rounded-xl border px-3.5 py-3 shadow-2xl backdrop-blur " +
+                (success ? "border-emerald-500/15 bg-[#111a17]/95 text-emerald-300" : "border-rose-500/15 bg-[#1b1114]/95 text-rose-300");
+            item.innerHTML = '<span class="grid h-6 w-6 shrink-0 place-items-center rounded-lg ' +
+                (success ? "bg-emerald-500/10" : "bg-rose-500/10") +
+                '"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+                (success ? '<path d="m5 12 4 4L19 6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' : '<path d="M12 8v5M12 17h.01" stroke-width="2.5" stroke-linecap="round"/>') +
+                '</svg></span><span class="text-[10px] font-medium">' + escapeHTML(message) + "</span>";
+            container.appendChild(item);
+            setTimeout(function () {
+                item.style.opacity = "0";
+                item.style.transform = "translateY(8px)";
+                item.style.transition = "all .2s ease";
+                setTimeout(function () { item.remove(); }, 220);
+            }, 2800);
+        }
+
+        function formatMoney(value) {
+            return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", maximumFractionDigits: 0 }).format(Number(value) || 0);
+        }
+
+        function formatDuration(seconds) {
+            var total = Number(seconds) || 0;
+            var hours = Math.floor(total / 3600);
+            var minutes = Math.floor((total % 3600) / 60);
+            var secs = total % 60;
+            return (hours ? hours + "h " : "") + String(minutes).padStart(2, "0") + "m " + String(secs).padStart(2, "0") + "s";
+        }
+
+        function showView(name) {
+            state.currentView = name;
+            document.querySelectorAll(".app-view").forEach(function (view) { view.classList.add("hidden"); });
+            var target = document.getElementById("view-" + name);
+            if (target) target.classList.remove("hidden");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            toggleSidebar(false);
+            if (name === "clients") renderAdvancedClients();
+            if (name === "transactions") renderDeals();
+            if (name === "technical") renderTechnicalKanban();
+            if (name === "time") { loadTimeSessions("all"); renderTimeKanban(); }
+            if (name === "portals") renderPortals();
+            if (name === "meetings") loadMeetings();
+            if (name === "finance") loadFinance();
+            if (name === "team") loadTeam();
+            if (name === "processes") loadProcessesAndCandidates();
+            if (name === "goals") loadWorkflows();
+            if (name === "documents") loadDocuments();
+        }
+
+        function setAdvancedClientView(view) {
+            state.advancedClientView = view;
+            document.querySelectorAll(".advanced-client-tab").forEach(function (button) {
+                var active = button.dataset.clientView === view;
+                button.classList.toggle("bg-white/[.07]", active);
+                button.classList.toggle("text-white", active);
+                button.classList.toggle("text-neutral-500", !active);
+            });
+            if (view === "high_value") {
+                api("/api/clients?view=high_value").then(function (rows) {
+                    renderAdvancedClientTable(rows);
+                }).catch(function (error) { toast(error.message, "error"); });
+            } else {
+                renderAdvancedClients();
+            }
+        }
+
+        function renderAdvancedClients() {
+            var container = document.getElementById("advanced-clients-container");
+            if (!container) return;
+            if (state.advancedClientView === "status") {
+                var statuses = ["Nowy lead", "Kontakt", "W rozmowie", "Aktywny klient", "Zakwalifikowany", "Niezainteresowany", "Nieaktywny klient"];
+                container.innerHTML = '<div class="overflow-auto p-3"><div class="kanban-grid">' + statuses.map(function (status) {
+                    var cards = state.clients.filter(function (client) { return client.status === status || (status === "Kontakt" && client.status === "Skontaktowano"); });
+                    return '<div class="kanban-column w-[250px] rounded-xl border border-white/[.065] bg-black/15 p-2" ondragover="kanbanOver(event)" ondragleave="kanbanLeave(event)" ondrop="dropClient(event, \'' + escapeHTML(status) + '\')">' +
+                        '<div class="mb-2 flex items-center justify-between px-1"><span class="text-[9px] font-semibold text-neutral-300">' + escapeHTML(status) + '</span><span class="rounded-md bg-white/[.05] px-1.5 py-0.5 text-[8px] text-neutral-600">' + cards.length + '</span></div>' +
+                        '<div class="space-y-2">' + cards.map(function (client) {
+                            return '<article draggable="true" ondragstart="startDragClient(event, ' + client.id + ')" ondragend="dragEnd(event)" onclick="openClientModal(' + client.id + ')" class="kanban-card rounded-xl border border-white/[.065] bg-[#121419] p-3"><div class="flex items-start justify-between gap-2"><p class="text-[10px] font-semibold text-white">' + escapeHTML(client.company) + '</p><span class="text-[8px] text-neutral-600">' + escapeHTML(client.priority) + '</span></div><p class="mt-1 text-[8px] text-neutral-500">' + escapeHTML(client.contact_name) + '</p><p class="mt-3 text-[9px] font-medium text-violet-300">' + formatMoney(client.estimated_value) + '</p></article>';
+                        }).join("") + '</div></div>';
+                }).join("") + '</div></div>';
+                return;
+            }
+            var rows = state.clients.slice();
+            if (state.advancedClientView === "priority") {
+                var rank = { "Wysoki": 0, "Średni": 1, "Niski": 2 };
+                rows.sort(function (a, b) { return rank[a.priority] - rank[b.priority] || b.estimated_value - a.estimated_value; });
+            }
+            renderAdvancedClientTable(rows);
+        }
+
+        function renderAdvancedClientTable(rows) {
+            var container = document.getElementById("advanced-clients-container");
+            if (!container) return;
+            container.innerHTML = '<table class="w-full min-w-[1100px] text-left"><thead><tr class="border-b border-white/[.055] bg-black/10 text-[8px] uppercase tracking-wider text-neutral-600"><th class="px-4 py-3">Firma</th><th class="px-3 py-3">Kontakt</th><th class="px-3 py-3">Status</th><th class="px-3 py-3">Właściciel</th><th class="px-3 py-3">Ostatni kontakt</th><th class="px-3 py-3">Tagi</th><th class="px-3 py-3">Telefon</th><th class="px-3 py-3">Wartość</th></tr></thead><tbody>' +
+                rows.map(function (client) {
+                    return '<tr onclick="openClientModal(' + client.id + ')" class="table-row cursor-pointer border-b border-white/[.045]"><td class="px-4 py-3"><p class="text-[10px] font-semibold text-white">' + escapeHTML(client.company) + '</p><p class="mt-0.5 text-[8px] text-neutral-600">' + escapeHTML(client.priority) + '</p></td><td class="px-3 py-3"><p class="text-[9px] text-neutral-300">' + escapeHTML(client.contact_name) + '</p><p class="text-[8px] text-neutral-600">' + escapeHTML(client.contact_email) + '</p></td><td class="px-3 py-3"><span class="rounded-lg border px-2 py-1 text-[8px] ' + statusClasses(client.status) + '">' + escapeHTML(client.status) + '</span></td><td class="px-3 py-3 text-[9px] text-neutral-400">' + escapeHTML(client.owner) + '</td><td class="px-3 py-3 text-[9px] text-neutral-500">' + escapeHTML(formatDate(client.last_contact)) + '</td><td class="px-3 py-3 text-[8px] text-neutral-500">' + escapeHTML((client.tags || []).join(" · ")) + '</td><td class="px-3 py-3 text-[9px] text-neutral-400">' + escapeHTML(client.phone || "—") + '</td><td class="px-3 py-3 text-[9px] font-semibold text-violet-300">' + formatMoney(client.estimated_value) + '</td></tr>';
+                }).join("") + '</tbody></table>';
+        }
+
+        function startDragClient(event, id) {
+            event.dataTransfer.setData("text/client-id", String(id));
+            event.currentTarget.classList.add("dragging");
+        }
+
+        async function dropClient(event, status) {
+            event.preventDefault();
+            event.currentTarget.classList.remove("drag-over");
+            var id = Number(event.dataTransfer.getData("text/client-id"));
+            if (!id) return;
+            try {
+                await api("/api/clients/" + id, { method: "PATCH", body: JSON.stringify({ status: status }) });
+                await loadAll(false);
+                toast("Status klienta: " + status, "success");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function setDealView(view) {
+            state.dealView = view;
+            document.querySelectorAll(".deal-tab").forEach(function (button) {
+                var active = button.dataset.dealView === view;
+                button.classList.toggle("bg-white/[.07]", active);
+                button.classList.toggle("text-white", active);
+                button.classList.toggle("text-neutral-500", !active);
+            });
+            renderDeals();
+        }
+
+        function renderDeals() {
+            var container = document.getElementById("deals-container");
+            if (!container) return;
+            if (state.dealView === "kanban") {
+                var stages = ["Rozpoznanie", "Zakwalifikowane", "Oferta", "Negocjacje", "Gotowe do montażu", "Zamknięte", "Utracone"];
+                var stageTone = ["violet", "stone", "yellow", "orange", "blue", "emerald", "rose"];
+                container.innerHTML = '<div class="overflow-auto p-3"><div class="kanban-grid">' + stages.map(function (stage, index) {
+                    var cards = state.projects.filter(function (project) { return project.deal_stage === stage; });
+                    var sum = cards.reduce(function (acc, project) { return acc + Number(project.value_pln || 0); }, 0);
+                    return '<div class="kanban-column w-[250px] rounded-xl border border-white/[.065] bg-black/15 p-2" ondragover="kanbanOver(event)" ondragleave="kanbanLeave(event)" ondrop="dropProject(event, \'deal_stage\', \'' + escapeHTML(stage) + '\')"><div class="mb-2 border-t-2 border-' + stageTone[index] + '-400 px-1 pt-2"><div class="flex justify-between"><span class="text-[9px] font-semibold text-neutral-300">' + escapeHTML(stage) + '</span><span class="text-[8px] text-neutral-600">' + cards.length + '</span></div><p class="mt-1 text-[8px] text-neutral-600">' + formatMoney(sum) + '</p></div><div class="space-y-2">' + cards.map(dealCard).join("") + '</div></div>';
+                }).join("") + '</div></div>';
+            } else {
+                var total = state.projects.reduce(function (acc, project) { return acc + Number(project.value_pln || 0); }, 0);
+                container.innerHTML = '<table class="w-full min-w-[900px] text-left"><thead><tr class="border-b border-white/[.055] bg-black/10 text-[8px] uppercase tracking-wider text-neutral-600"><th class="px-4 py-3">Projekt</th><th class="px-3 py-3">Etap transakcji</th><th class="px-3 py-3">Wartość transakcji</th><th class="px-3 py-3">Data</th><th class="px-3 py-3">Priorytet</th><th></th></tr></thead><tbody>' +
+                    state.projects.map(function (project) { return '<tr class="table-row border-b border-white/[.045]"><td class="px-4 py-3"><p class="text-[10px] font-semibold text-white">' + escapeHTML(project.project_name) + '</p><p class="text-[8px] text-neutral-600">' + escapeHTML(project.client_name) + '</p></td><td class="px-3 py-3"><select onchange="quickUpdateProject(' + project.id + ', this, \'deal_stage\')" class="rounded-lg border border-white/[.07] bg-neutral-900 px-2 py-1.5 text-[8px] text-neutral-300">' + selectOptions(["Rozpoznanie", "Zakwalifikowane", "Oferta", "Negocjacje", "Gotowe do montażu", "Zamknięte", "Utracone"], project.deal_stage) + '</select></td><td class="px-3 py-3 text-[10px] font-semibold text-emerald-300">' + formatMoney(project.value_pln) + '</td><td class="px-3 py-3 text-[9px] text-neutral-500">' + escapeHTML(project.deal_date || "—") + '</td><td class="px-3 py-3"><span class="rounded-lg border px-2 py-1 text-[8px] ' + priorityClasses(project.priority) + '">' + escapeHTML(project.priority) + '</span></td><td class="px-3 py-3"><button onclick="openProjectModal(' + project.id + ')" class="text-[9px] text-violet-400">Edytuj</button></td></tr>'; }).join("") +
+                    '<tr class="bg-white/[.018]"><td colspan="2" class="px-4 py-3 text-[9px] font-semibold text-neutral-400">SUMA LEJKA</td><td class="px-3 py-3 text-[11px] font-bold text-white">' + formatMoney(total) + '</td><td colspan="3"></td></tr></tbody></table>';
+            }
+        }
+
+        function dealCard(project) {
+            return '<article draggable="true" ondragstart="startDragProject(event, ' + project.id + ')" ondragend="dragEnd(event)" onclick="openProjectModal(' + project.id + ')" class="kanban-card rounded-xl border border-white/[.065] bg-[#121419] p-3"><p class="text-[10px] font-semibold text-white">' + escapeHTML(project.project_name) + '</p><p class="mt-1 text-[8px] text-neutral-600">' + escapeHTML(project.client_name) + '</p><div class="mt-3 flex items-end justify-between"><span class="text-[9px] font-semibold text-emerald-300">' + formatMoney(project.value_pln) + '</span><span class="text-[8px] text-neutral-500">' + project.paid_percent + '%</span></div><div class="mt-1 h-1 rounded-full bg-neutral-800"><div class="h-full rounded-full bg-violet-500" style="width:' + project.paid_percent + '%"></div></div></article>';
+        }
+
+        function startDragProject(event, id) {
+            event.dataTransfer.setData("text/project-id", String(id));
+            event.currentTarget.classList.add("dragging");
+        }
+        function dragEnd(event) { event.currentTarget.classList.remove("dragging"); }
+        function kanbanOver(event) { event.preventDefault(); event.currentTarget.classList.add("drag-over"); }
+        function kanbanLeave(event) { event.currentTarget.classList.remove("drag-over"); }
+
+        async function dropProject(event, field, value) {
+            event.preventDefault();
+            event.currentTarget.classList.remove("drag-over");
+            var id = Number(event.dataTransfer.getData("text/project-id"));
+            if (!id) return;
+            var payload = {}; payload[field] = value;
+            try {
+                await api("/api/projects/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+                await loadAll(false);
+                toast("Zaktualizowano: " + value, "success");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function renderTechnicalKanban() {
+            renderProjectKanban("technical-kanban", ["Gotowe do terminu", "DC", "PC", "AC", "Gotowe do sprawdzenia"], false);
+        }
+
+        function renderTimeKanban() {
+            renderProjectKanban("time-kanban", ["Gotowe do terminu", "WP", "DC", "AC", "Gotowe do sprawdzenia"], true);
+        }
+
+        function renderProjectKanban(targetId, statuses, withTimer) {
+            var target = document.getElementById(targetId);
+            if (!target) return;
+            target.innerHTML = statuses.map(function (status) {
+                var cards = state.projects.filter(function (project) { return project.realization_status === status; });
+                return '<div class="kanban-column w-[260px] rounded-xl border border-white/[.065] bg-black/15 p-2" ondragover="kanbanOver(event)" ondragleave="kanbanLeave(event)" ondrop="dropProject(event, \'realization_status\', \'' + escapeHTML(status) + '\')"><div class="mb-2 flex items-center justify-between px-1"><span class="text-[9px] font-semibold text-neutral-300">' + escapeHTML(status) + '</span><span class="text-[8px] text-neutral-600">' + cards.length + '</span></div><div class="space-y-2">' + cards.map(function (project) {
+                    return '<article draggable="true" ondragstart="startDragProject(event, ' + project.id + ')" ondragend="dragEnd(event)" class="kanban-card rounded-xl border border-white/[.065] bg-[#121419] p-3"><div onclick="openProjectModal(' + project.id + ')"><p class="text-[10px] font-semibold text-white">' + escapeHTML(project.project_name) + '</p><p class="mt-1 text-[8px] text-neutral-600">' + escapeHTML(project.client_name) + '</p><div class="mt-2 flex items-center justify-between"><span class="text-[8px] text-neutral-500">' + escapeHTML(project.responsible) + '</span><span class="rounded-md border px-1.5 py-0.5 text-[7px] ' + priorityClasses(project.priority) + '">' + escapeHTML(project.priority) + '</span></div></div>' + (withTimer ? '<button onclick="event.stopPropagation(); toggleProjectTimer(' + project.id + ')" class="mt-3 w-full rounded-lg border border-emerald-500/15 bg-emerald-500/[.06] py-1.5 text-[8px] font-semibold text-emerald-300">▶ Start / Stop · ' + formatDuration(project.total_seconds) + '</button>' : "") + '</article>';
+                }).join("") + '</div></div>';
+            }).join("");
+        }
+
+        async function toggleProjectTimer(id) {
+            try {
+                var result = await api("/api/projects/" + id + "/timer/toggle", { method: "POST" });
+                toast(result.running ? "Timer uruchomiony" : "Sesja zapisana: " + formatDuration(result.duration_seconds), "success");
+                await loadAll(false);
+                if (state.currentView === "time") loadTimeSessions("all");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function toggleTimerFromModal() {
+            var id = Number(document.getElementById("project-id").value);
+            if (id) toggleProjectTimer(id);
+        }
+
+        async function loadTimeSessions(period) {
+            try {
+                state.timeSessions = await api("/api/time-sessions?period=" + encodeURIComponent(period || "all"));
+                var container = document.getElementById("time-sessions-container");
+                container.innerHTML = '<table class="w-full min-w-[650px] text-left"><thead><tr class="border-b border-white/[.05] text-[8px] uppercase text-neutral-600"><th class="px-4 py-2">Projekt</th><th class="px-3 py-2">Rozpoczęcie</th><th class="px-3 py-2">Zakończenie</th><th class="px-3 py-2">Całkowity czas</th></tr></thead><tbody>' + state.timeSessions.map(function (session) { return '<tr class="border-b border-white/[.04]"><td class="px-4 py-2.5"><p class="text-[9px] font-semibold text-neutral-300">' + escapeHTML(session.project_name) + '</p><p class="text-[7px] text-neutral-600">' + escapeHTML(session.employee_email) + '</p></td><td class="px-3 py-2.5 text-[8px] text-neutral-500">' + escapeHTML(formatDate(session.started_at)) + '</td><td class="px-3 py-2.5 text-[8px] text-neutral-500">' + (session.ended_at ? escapeHTML(formatDate(session.ended_at)) : '<span class="text-emerald-400">● trwa</span>') + '</td><td class="px-3 py-2.5 text-[9px] font-semibold text-white">' + formatDuration(session.duration_seconds) + '</td></tr>'; }).join("") + '</tbody></table>';
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function renderPortals() {
+            var target = document.getElementById("portals-grid");
+            if (!target) return;
+            target.innerHTML = state.projects.map(function (project) {
+                return '<article class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-4 shadow-panel"><div class="flex items-start justify-between"><div><p class="text-[10px] font-semibold text-white">' + escapeHTML(project.client_name) + '</p><p class="mt-1 text-[9px] text-neutral-500">' + escapeHTML(project.project_name) + '</p></div><span class="rounded-lg border border-white/[.07] px-2 py-1 text-[8px] text-neutral-400">' + escapeHTML(project.realization_status) + '</span></div><div class="mt-4 h-1.5 rounded-full bg-neutral-800"><div class="h-full rounded-full bg-violet-500" style="width:' + project.paid_percent + '%"></div></div><div class="mt-2 flex justify-between text-[8px] text-neutral-600"><span>Opłacono ' + project.paid_percent + '%</span>' + (project.document_url ? '<a href="' + escapeHTML(project.document_url) + '" target="_blank" class="text-violet-400">Dokumenty ↗</a>' : '<span>Brak dokumentów</span>') + '</div></article>';
+            }).join("");
+        }
+
+        async function loadMeetings() {
+            try {
+                var month = state.calendarDate.getFullYear() + "-" + String(state.calendarDate.getMonth() + 1).padStart(2, "0");
+                state.meetings = await api("/api/meetings?month=" + month);
+                renderCalendar();
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function renderCalendar() {
+            var date = state.calendarDate;
+            var year = date.getFullYear();
+            var monthIndex = date.getMonth();
+            var monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
+            document.getElementById("calendar-title").textContent = monthNames[monthIndex] + " " + year;
+            document.getElementById("no-date-count").textContent = "No date · " + state.meetings.filter(function (meeting) { return !meeting.starts_at; }).length;
+            var first = new Date(year, monthIndex, 1);
+            var offset = (first.getDay() + 6) % 7;
+            var days = new Date(year, monthIndex + 1, 0).getDate();
+            var cells = [];
+            for (var empty = 0; empty < offset; empty++) cells.push('<div class="calendar-day border-b border-r border-white/[.045] bg-black/10"></div>');
+            for (var day = 1; day <= days; day++) {
+                var iso = year + "-" + String(monthIndex + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+                var events = state.meetings.filter(function (meeting) { return meeting.starts_at && meeting.starts_at.slice(0, 10) === iso; });
+                var isToday = new Date().toISOString().slice(0, 10) === iso;
+                cells.push('<div class="calendar-day border-b border-r border-white/[.045] p-2"><div class="flex items-center justify-between"><span class="grid h-5 w-5 place-items-center rounded-full text-[9px] ' + (isToday ? "bg-violet-600 text-white" : "text-neutral-500") + '">' + day + '</span><button onclick="quickMeeting(\'' + iso + '\')" class="text-neutral-700 hover:text-white">+</button></div><div class="mt-1.5 space-y-1">' + events.map(function (meeting) { return '<button class="block w-full rounded-md border border-violet-500/15 bg-violet-500/[.07] px-1.5 py-1 text-left"><p class="truncate text-[8px] font-semibold text-violet-200">' + escapeHTML(meeting.title) + '</p><p class="mt-0.5 text-[7px] text-violet-400/60">' + escapeHTML(meeting.starts_at.slice(11, 16)) + ' · ' + escapeHTML(meeting.client_name || "") + '</p></button>'; }).join("") + '</div></div>');
+            }
+            document.getElementById("calendar-grid").innerHTML = cells.join("");
+        }
+
+        function calendarToday() {
+            state.calendarDate = new Date();
+            loadMeetings();
+        }
+
+        async function quickMeeting(date) {
+            var title = prompt("Nazwa spotkania:");
+            if (!title) return;
+            var starts = date ? date + "T10:00:00+02:00" : null;
+            try {
+                await api("/api/meetings", { method: "POST", body: JSON.stringify({ title: title, owner_email: state.session.email, starts_at: starts, duration_minutes: 60 }) });
+                await loadMeetings();
+                toast("Spotkanie dodane", "success");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function loadFinance() {
+            try {
+                var results = await Promise.all([api("/api/finance"), api("/api/finance/performance")]);
+                state.finance = results[0];
+                renderFinance(results[1]);
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function renderFinance(performance) {
+            var finance = state.finance;
+            if (!finance) return;
+            document.getElementById("finance-role-label").textContent = finance.role === "Admin" ? "Panel Admina · pełne koszty i marże" : "Widok Sprzedawcy · wyłącznie Twoje zamknięte tematy";
+            var kpis = [
+                ["Przychód", finance.kpi.revenue, "text-white"],
+                ["Materiały", finance.kpi.materials, "text-amber-300"],
+                ["Prowizje", finance.kpi.commission, "text-violet-300"],
+                ["Czysty zysk", finance.kpi.operating_profit, "text-emerald-300"],
+                ["Ważony forecast", finance.kpi.forecast, "text-cyan-300"]
+            ].filter(function (item) { return item[1] != null; });
+            document.getElementById("finance-kpis").innerHTML = kpis.map(function (item) { return '<article class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 p-4 shadow-panel"><p class="text-[8px] uppercase tracking-wider text-neutral-600">' + item[0] + '</p><p class="mt-2 text-[18px] font-semibold ' + item[2] + '">' + formatMoney(item[1]) + '</p></article>'; }).join("");
+            var admin = finance.role === "Admin";
+            document.getElementById("finance-table").innerHTML = '<table class="w-full min-w-[850px] text-left"><thead><tr class="border-b border-white/[.05] text-[8px] uppercase text-neutral-600"><th class="px-4 py-3">Projekt</th><th class="px-3 py-3">Wartość</th>' + (admin ? '<th class="px-3 py-3">Materiały</th><th class="px-3 py-3">Czysty zysk</th>' : "") + '<th class="px-3 py-3">Prowizja %</th><th class="px-3 py-3">Należna prowizja</th><th class="px-3 py-3">Faktura</th></tr></thead><tbody>' + finance.projects.map(function (project) {
+                return '<tr class="border-b border-white/[.04]"><td class="px-4 py-3"><p class="text-[9px] font-semibold text-white">' + escapeHTML(project.project_name) + '</p><p class="text-[7px] text-neutral-600">' + escapeHTML(project.client_name) + '</p></td><td class="px-3 py-3 text-[9px] text-neutral-300">' + formatMoney(project.value_pln) + '</td>' + (admin ? '<td class="px-3 py-3 text-[9px] text-amber-300">' + formatMoney(project.materials_cost) + '</td><td class="px-3 py-3 text-[9px] text-emerald-300">' + formatMoney(project.profit) + '</td>' : "") + '<td class="px-3 py-3">' + (admin ? '<input type="number" min="0" max="100" value="' + project.commission_rate + '" onchange="updateCommission(' + project.id + ', this.value)" class="w-16 rounded-lg border border-white/[.07] bg-neutral-900 px-2 py-1 text-[8px]">' : '<span class="text-[9px] text-neutral-400">' + project.commission_rate + '%</span>') + '</td><td class="px-3 py-3 text-[9px] font-semibold text-violet-300">' + formatMoney(project.commission_due) + '</td><td class="px-3 py-3"><a href="/api/projects/' + project.id + '/invoice.pdf" class="rounded-lg border border-white/[.07] px-2 py-1 text-[8px] text-neutral-300">PDF ↓</a></td></tr>';
+            }).join("") + '</tbody></table>';
+            document.getElementById("performance-bars").innerHTML = performance.map(function (person) {
+                return '<div><div class="mb-1 flex justify-between text-[8px]"><span class="text-neutral-400">' + escapeHTML(person.name) + '</span><span class="text-neutral-600">' + person.touches + ' kontaktów · ' + person.conversion + '%</span></div><div class="h-1.5 rounded-full bg-neutral-800"><div class="h-full rounded-full bg-cyan-500" style="width:' + Math.min(100, person.conversion) + '%"></div></div></div>';
+            }).join("") || '<p class="text-[9px] text-neutral-600">Brak danych aktywności.</p>';
+            if (state.financeChart) state.financeChart.destroy();
+            var canvas = document.getElementById("finance-chart");
+            if (finance.chart && window.Chart) {
+                state.financeChart = new Chart(canvas, { type: "doughnut", data: { labels: finance.chart.labels, datasets: [{ data: finance.chart.values, backgroundColor: ["#f59e0b", "#8b5cf6", "#10b981"], borderWidth: 0 }] }, options: { cutout: "70%", plugins: { legend: { position: "bottom", labels: { color: "#737373", boxWidth: 8, font: { size: 9 } } } } } });
+            } else {
+                canvas.parentElement.innerHTML = '<p class="py-10 text-center text-[9px] text-neutral-600">Wykres kosztów jest dostępny dla Admina.</p>';
+            }
+        }
+
+        async function updateCommission(id, value) {
+            try {
+                await api("/api/projects/" + id, { method: "PATCH", body: JSON.stringify({ commission_rate: Number(value) }) });
+                await loadFinance();
+                toast("Stawka prowizji zapisana", "success");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function loadTeam() {
+            try {
+                state.employees = await api("/api/employees");
+                var admin = state.session && state.session.system_role === "Admin";
+                document.getElementById("team-table").innerHTML = '<table class="w-full text-left"><thead><tr class="border-b border-white/[.05] text-[8px] uppercase text-neutral-600"><th class="px-4 py-3">Pracownik</th><th class="px-3 py-3">Rola / Stanowisko</th><th class="px-3 py-3">Menedżer</th><th class="px-3 py-3">Lokacja</th><th class="px-3 py-3">Start</th><th class="px-3 py-3">Status</th><th class="px-3 py-3">Kontakt</th><th class="px-3 py-3">Bio</th><th class="px-3 py-3">Uprawnienia</th></tr></thead><tbody>' + state.employees.map(function (person) {
+                    return '<tr class="border-b border-white/[.04]"><td class="px-4 py-3"><div class="flex items-center gap-2"><span class="grid h-7 w-7 place-items-center rounded-full bg-violet-500/10 text-[8px] font-bold text-violet-300">' + escapeHTML(initials(person.name)) + '</span><div><p class="text-[9px] font-semibold text-white">' + escapeHTML(person.name) + '</p><p class="text-[7px] text-neutral-600">' + escapeHTML(person.email) + '</p></div></div></td><td class="px-3 py-3"><p class="text-[8px] text-violet-300">' + escapeHTML(person.system_role) + '</p><p class="text-[8px] text-neutral-500">' + escapeHTML(person.position) + '</p></td><td class="px-3 py-3 text-[8px] text-neutral-500">' + escapeHTML(person.manager || "—") + '</td><td class="px-3 py-3 text-[8px] text-neutral-500">' + escapeHTML(person.location) + '</td><td class="px-3 py-3 text-[8px] text-neutral-500">' + escapeHTML(person.start_date) + '</td><td class="px-3 py-3 text-[8px] text-emerald-400">' + escapeHTML(person.employee_status) + '</td><td class="px-3 py-3 text-[8px] text-neutral-500">' + escapeHTML(person.phone) + '</td><td class="max-w-[180px] px-3 py-3 text-[8px] text-neutral-600">' + escapeHTML(person.bio) + '</td><td class="px-3 py-3">' + (admin ? '<select onchange="updateEmployeeRole(' + person.id + ', this.value)" class="rounded-lg border border-white/[.07] bg-neutral-900 px-2 py-1 text-[8px]">' + selectOptions(["Admin", "User"], person.system_role) + '</select>' : '<span class="text-[8px] text-neutral-500">' + person.system_role + '</span>') + '</td></tr>';
+                }).join("") + '</tbody></table>';
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function updateEmployeeRole(id, role) {
+            try {
+                await api("/api/employees/" + id + "/role", { method: "PATCH", body: JSON.stringify({ system_role: role }) });
+                toast("Uprawnienia zaktualizowane", "success");
+            } catch (error) { toast(error.message, "error"); loadTeam(); }
+        }
+
+        async function loadProcessesAndCandidates() {
+            try {
+                state.processes = await api("/api/processes");
+                document.getElementById("processes-list").innerHTML = state.processes.map(function (process) {
+                    return '<details class="rounded-xl border border-white/[.06] bg-black/15"><summary class="cursor-pointer px-3 py-2.5 text-[10px] font-semibold text-neutral-300">' + escapeHTML(process.title) + '<span class="ml-2 text-[8px] font-normal text-neutral-600">' + escapeHTML(process.category) + '</span></summary><textarea onblur="saveProcess(' + process.id + ', this.value)" class="inline-edit min-h-[150px] w-full resize-y border-t border-white/[.05] bg-transparent p-3 text-[9px] leading-relaxed text-neutral-400">' + escapeHTML(process.content) + '</textarea></details>';
+                }).join("");
+                if (state.session.system_role === "Admin") {
+                    state.candidates = await api("/api/candidates");
+                    renderCandidates();
+                } else {
+                    document.getElementById("candidates-list").innerHTML = '<p class="rounded-xl border border-white/[.06] p-3 text-[9px] text-neutral-600">Lista kandydatów jest dostępna wyłącznie dla Admina. Publiczny formularz pozostaje aktywny.</p>';
+                }
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function saveProcess(id, content) {
+            if (state.session.system_role !== "Admin") return toast("Edycja SOP wymaga roli Admin", "error");
+            try { await api("/api/processes/" + id, { method: "PATCH", body: JSON.stringify({ content: content }) }); toast("SOP zapisany", "success"); } catch (error) { toast(error.message, "error"); }
+        }
+
+        function renderCandidates() {
+            document.getElementById("candidates-list").innerHTML = state.candidates.map(function (candidate) {
+                return '<article class="rounded-xl border border-white/[.06] bg-black/15 p-3"><div class="flex items-start justify-between"><div><p class="text-[9px] font-semibold text-white">' + escapeHTML(candidate.name) + '</p><p class="mt-0.5 text-[7px] text-neutral-600">' + escapeHTML(candidate.position) + ' · ' + escapeHTML(candidate.email) + '</p></div><a href="/api/candidates/' + candidate.id + '/cv" target="_blank" class="text-[8px] text-violet-400">CV ↗</a></div><div class="mt-2 flex gap-2"><select onchange="updateCandidate(' + candidate.id + ', {candidate_status:this.value})" class="field py-1 text-[8px]">' + selectOptions(["Nowy", "Screening", "Rozmowa", "Oferta", "Odrzucony", "Zatrudniony"], candidate.candidate_status) + '</select><select onchange="updateCandidate(' + candidate.id + ', {rating:Number(this.value)})" class="field w-24 py-1 text-[8px]">' + selectOptions(["0", "1", "2", "3", "4", "5"], String(candidate.rating)) + '</select></div></article>';
+            }).join("") || '<p class="text-[9px] text-neutral-600">Brak kandydatów.</p>';
+        }
+
+        async function submitCandidate(event) {
+            event.preventDefault();
+            var form = event.currentTarget;
+            try {
+                var response = await fetch("/api/candidates", { method: "POST", body: new FormData(form) });
+                if (!response.ok) throw new Error((await response.json()).detail || "Nie udało się wysłać CV");
+                form.reset();
+                toast("Kandydatura została dodana", "success");
+                if (state.session.system_role === "Admin") loadProcessesAndCandidates();
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function updateCandidate(id, payload) {
+            try {
+                await api("/api/candidates/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+                toast("Kandydat zaktualizowany", "success");
+                loadProcessesAndCandidates();
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function loadWorkflows() {
+            try {
+                var results = await Promise.all([api("/api/tasks"), api("/api/notifications")]);
+                document.getElementById("workflow-tasks").innerHTML = results[0].map(function (task) { return '<article class="rounded-xl border border-white/[.06] bg-black/15 p-3"><div class="flex justify-between gap-3"><div><p class="text-[9px] font-semibold text-white">' + escapeHTML(task.title) + '</p><p class="mt-1 text-[8px] text-neutral-600">' + escapeHTML(task.project_name) + ' · ' + escapeHTML(task.assigned_to) + '</p></div><span class="text-[8px] text-amber-300">' + escapeHTML(task.deadline || "bez terminu") + '</span></div></article>'; }).join("") || '<p class="text-[9px] text-neutral-600">Brak zadań z automatyzacji. Przesuń transakcję do etapu Oferta.</p>';
+                document.getElementById("workflow-notifications").innerHTML = results[1].map(function (notice) { return '<article class="rounded-xl border border-white/[.06] bg-black/15 p-3"><p class="text-[9px] font-semibold text-white">' + escapeHTML(notice.title) + '</p><p class="mt-1 text-[8px] leading-relaxed text-neutral-500">' + escapeHTML(notice.content) + '</p><p class="mt-2 text-[7px] text-neutral-700">' + escapeHTML(notice.category) + ' · ' + escapeHTML(formatDate(notice.created_at)) + '</p></article>'; }).join("") || '<p class="text-[9px] text-neutral-600">Brak powiadomień.</p>';
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function loadDocuments() {
+            try {
+                state.documents = await api("/api/documents");
+                var wiki = state.documents.filter(function (document) { return !document.stored_name; });
+                var files = state.documents.filter(function (document) { return document.stored_name; });
+                document.getElementById("wiki-documents").innerHTML = wiki.map(function (document) {
+                    return '<details class="rounded-2xl border border-white/[.065] bg-[#0d0f13]/92 shadow-panel"><summary class="cursor-pointer px-4 py-3 text-[10px] font-semibold text-white">' + escapeHTML(document.category) + ' · ' + escapeHTML(document.title) + '</summary><textarea onblur="saveDocumentText(' + document.id + ', this.value)" class="inline-edit min-h-[130px] w-full resize-y border-t border-white/[.05] bg-transparent p-4 text-[9px] leading-relaxed text-neutral-400">' + escapeHTML(document.content) + '</textarea></details>';
+                }).join("");
+                document.getElementById("repository-list").innerHTML = files.map(function (document) { return '<a href="/api/documents/' + document.id + '/download" class="flex items-center justify-between rounded-xl border border-white/[.06] bg-[#0d0f13]/92 p-3 hover:border-violet-500/20"><div><p class="text-[9px] font-semibold text-neutral-300">' + escapeHTML(document.title) + '</p><p class="mt-0.5 text-[7px] text-neutral-600">' + escapeHTML(document.filename) + '</p></div><span class="text-[8px] text-violet-400">PDF ↓</span></a>'; }).join("") || '<p class="p-3 text-center text-[8px] text-neutral-600">Repozytorium jest puste.</p>';
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function saveDocumentText(id, content) {
+            if (state.session.system_role !== "Admin") return toast("Edycja dokumentów wymaga roli Admin", "error");
+            try { await api("/api/documents/" + id, { method: "PATCH", body: JSON.stringify({ content: content }) }); toast("Dokument zapisany", "success"); } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function submitDocument(event) {
+            event.preventDefault();
+            var form = event.currentTarget;
+            try {
+                var response = await fetch("/api/documents/upload", { method: "POST", body: new FormData(form) });
+                if (!response.ok) throw new Error((await response.json()).detail || "Nie udało się wgrać dokumentu");
+                form.reset();
+                toast("Dokument dodany do repozytorium", "success");
+                loadDocuments();
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function handleDocumentDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove("border-violet-500/50");
+            if (event.dataTransfer.files.length) document.getElementById("document-file").files = event.dataTransfer.files;
+        }
+
+        function renderProductCatalog() {
+            var container = document.getElementById("product-catalog");
+            if (!container) return;
+            container.innerHTML = state.products.map(function (product) {
+                var selected = state.selectedProducts[product.id] || 0;
+                return '<label class="flex cursor-pointer items-center gap-2 rounded-lg border border-white/[.06] bg-white/[.02] p-2"><input type="checkbox" ' + (selected ? "checked" : "") + ' onchange="toggleProduct(' + product.id + ', this.checked)" class="h-3.5 w-3.5 accent-violet-500"><span class="min-w-0 flex-1"><span class="block truncate text-[8px] font-medium text-neutral-300">' + escapeHTML(product.name) + '</span><span class="text-[7px] text-neutral-600">' + formatMoney(product.wholesale_price) + ' / ' + formatMoney(product.suggested_price) + '</span></span>' + (selected ? '<input type="number" min="1" value="' + selected + '" onchange="setProductQuantity(' + product.id + ', this.value)" onclick="event.stopPropagation()" class="w-12 rounded-md border border-white/[.07] bg-neutral-900 px-1 py-1 text-[8px]">' : "") + '</label>';
+            }).join("");
+            document.getElementById("cpq-summary").textContent = Object.keys(state.selectedProducts).length + " pozycji";
+        }
+
+        function toggleProduct(id, checked) {
+            if (checked) state.selectedProducts[id] = 1;
+            else delete state.selectedProducts[id];
+            recalculateCPQ();
+            renderProductCatalog();
+        }
+
+        function setProductQuantity(id, value) {
+            state.selectedProducts[id] = Math.max(1, Number(value) || 1);
+            recalculateCPQ();
+        }
+
+        function selectedProductPayload() {
+            return Object.keys(state.selectedProducts).map(function (id) {
+                var product = state.products.find(function (item) { return item.id === Number(id); });
+                return { id: Number(id), name: product ? product.name : "", quantity: state.selectedProducts[id] };
+            });
+        }
+
+        function recalculateCPQ() {
+            var materials = 0, suggested = 0;
+            Object.keys(state.selectedProducts).forEach(function (id) {
+                var product = state.products.find(function (item) { return item.id === Number(id); });
+                if (product) {
+                    materials += product.wholesale_price * state.selectedProducts[id];
+                    suggested += product.suggested_price * state.selectedProducts[id];
+                }
+            });
+            document.getElementById("project-materials-cost").value = Math.round(materials);
+            document.getElementById("project-value").value = Math.round(suggested);
+            updateProfitPreview();
+        }
+
+        function updateProfitPreview() {
+            var value = Number(document.getElementById("project-value").value) || 0;
+            var cost = Number(document.getElementById("project-materials-cost").value) || 0;
+            document.getElementById("project-profit").textContent = formatMoney(value - cost);
+        }
+
+        async function loadClientMessages(clientId) {
+            try {
+                var messages = await api("/api/clients/" + clientId + "/messages");
+                document.getElementById("client-messages").innerHTML = messages.map(function (message) {
+                    var out = message.direction === "out";
+                    return '<div class="flex ' + (out ? "justify-end" : "justify-start") + '"><div class="max-w-[85%] rounded-xl ' + (out ? "bg-violet-500/10 text-violet-200" : "bg-white/[.05] text-neutral-300") + ' px-2.5 py-2"><p class="text-[8px] leading-relaxed">' + escapeHTML(message.content) + '</p><p class="mt-1 text-[6px] text-neutral-600">' + escapeHTML(message.channel) + ' · ' + escapeHTML(formatDate(message.created_at)) + '</p></div></div>';
+                }).join("") || '<p class="py-12 text-center text-[8px] text-neutral-600">Brak wiadomości.</p>';
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function sendClientMessage() {
+            var id = Number(document.getElementById("client-id").value);
+            var content = document.getElementById("message-content").value.trim();
+            if (!id || !content) return;
+            try {
+                await api("/api/clients/" + id + "/messages", { method: "POST", body: JSON.stringify({ channel: document.getElementById("message-channel").value, content: content }) });
+                document.getElementById("message-content").value = "";
+                await loadClientMessages(id);
+                toast("Wiadomość zapisana w historii", "success");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function toggleClientCall() {
+            var clientId = Number(document.getElementById("client-id").value);
+            var button = document.getElementById("call-client-button");
+            if (!clientId) return;
+            try {
+                if (!state.activeCall) {
+                    state.activeCall = await api("/api/clients/" + clientId + "/calls/start", { method: "POST" });
+                    state.activeCall.clientId = clientId;
+                    state.activeCall.seconds = 0;
+                    button.textContent = "■";
+                    button.classList.add("text-rose-300");
+                    state.callInterval = setInterval(function () {
+                        state.activeCall.seconds += 1;
+                        document.getElementById("call-timer").textContent = "☎ " + formatDuration(state.activeCall.seconds);
+                    }, 1000);
+                    toast("Symulowane połączenie rozpoczęte", "success");
+                } else {
+                    var result = await api("/api/clients/" + state.activeCall.clientId + "/calls/" + state.activeCall.id + "/stop", { method: "POST" });
+                    clearInterval(state.callInterval);
+                    state.activeCall = null;
+                    button.textContent = "☎";
+                    button.classList.remove("text-rose-300");
+                    document.getElementById("call-timer").textContent = "";
+                    await loadClientMessages(clientId);
+                    toast("Rozmowa zapisana: " + formatDuration(result.duration_seconds), "success");
+                }
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        async function autoSaveClientNotes() {
+            var id = Number(document.getElementById("client-id").value);
+            if (!id) return;
+            try {
+                await api("/api/clients/" + id, { method: "PATCH", body: JSON.stringify({ notes: document.getElementById("client-notes").value }) });
+                toast("Notatka zapisana automatycznie", "success");
+            } catch (error) { toast(error.message, "error"); }
+        }
+
+        function toggleBlock(sectionId, button) {
+            var section = document.getElementById(sectionId);
+            Array.from(section.children).slice(1).forEach(function (child) { child.classList.toggle("hidden"); });
+            button.textContent = button.textContent === "⌄" ? "⌃" : "⌄";
+        }
+
+        function toggleSidebar(open) {
+            document.getElementById("sidebar").classList.toggle("open", open);
+            document.getElementById("mobile-overlay").classList.toggle("hidden", !open);
+        }
+
+        function activateNav(element) {
+            document.querySelectorAll(".nav-item").forEach(function (item) { item.classList.remove("active"); });
+            element.classList.add("active");
+            toggleSidebar(false);
+        }
+
+        function scrollToSection(id) {
+            var element = document.getElementById(id);
+            if (element) element.scrollIntoView({ behavior: "smooth", block: "start" });
+            toggleSidebar(false);
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeModal();
+                toggleSidebar(false);
+            }
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+                event.preventDefault();
+                document.getElementById("global-search").focus();
+            }
+        });
+
+        loadAll(false);
     </script>
-  </body>
+</body>
 </html>
-
