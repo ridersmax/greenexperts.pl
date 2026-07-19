@@ -11,6 +11,45 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://greenexperts.pl/">
   <link rel="canonical" href="https://greenexperts.pl/">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GreenExperts — pompy ciepła, fotowoltaika i OZE">
+  <meta name="twitter:description" content="Audyt, dobór, montaż, serwis, dotacje i finansowanie instalacji OZE w całej Polsce.">
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@graph":[
+      {
+        "@type":["Organization","LocalBusiness"],
+        "@id":"https://greenexperts.pl/#organization",
+        "name":"GreenExperts",
+        "url":"https://greenexperts.pl/",
+        "logo":"https://greenexperts.pl/assets/logo.svg",
+        "telephone":"+48720466984",
+        "areaServed":{"@type":"Country","name":"Polska"},
+        "description":"Kompleksowe instalacje OZE: audyt, dobór, montaż, serwis, dotacje i finansowanie."
+      },
+      {
+        "@type":"Service",
+        "@id":"https://greenexperts.pl/#oze",
+        "provider":{"@id":"https://greenexperts.pl/#organization"},
+        "areaServed":{"@type":"Country","name":"Polska"},
+        "serviceType":["Pompy ciepła","Fotowoltaika","Magazyny energii","Klimatyzacja","Rekuperacja","Serwis instalacji OZE"]
+      },
+      {
+        "@type":"FAQPage",
+        "@id":"https://greenexperts.pl/#faq-schema",
+        "mainEntity":[
+          {"@type":"Question","name":"Czy montujecie w całej Polsce?","acceptedAnswer":{"@type":"Answer","text":"Tak. Obsługujemy inwestycje w całym kraju. Dostępność terminu i ewentualny koszt dojazdu potwierdzamy przed przygotowaniem finalnej oferty."}},
+          {"@type":"Question","name":"Ile trwa przygotowanie wyceny?","acceptedAnswer":{"@type":"Answer","text":"Wstępny zakres i widełki zwykle przygotowujemy w 24–48 godzin od otrzymania kompletu danych. Złożone projekty wymagają audytu."}},
+          {"@type":"Question","name":"Czy pomagacie uzyskać dotację?","acceptedAnswer":{"@type":"Answer","text":"Tak. Weryfikujemy, czy inwestycja i wnioskodawca spełniają aktualne warunki programu, a następnie pomagamy w dokumentacji."}},
+          {"@type":"Question","name":"Czy serwisujecie instalacje innych firm?","acceptedAnswer":{"@type":"Answer","text":"Tak, po wcześniejszej diagnostyce i sprawdzeniu dostępności części oraz dokumentacji urządzenia."}},
+          {"@type":"Question","name":"Czy ceny na stronie są ostateczne?","acceptedAnswer":{"@type":"Answer","text":"Nie. Są to orientacyjne wartości brutto. Wiążącą ofertę przedstawiamy po zebraniu danych technicznych."}}
+        ]
+      }
+    ]
+  }
+  </script>
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <style>
     :root{--ink:#102c26;--muted:#62736d;--green:#0c3b30;--green2:#15634b;--accent:#b8f24a;--mint:#eaf8ee;--paper:#f7f5ef;--white:#fff;--line:rgba(16,44,38,.12);--shadow:0 24px 70px rgba(14,51,42,.12);--radius:26px}
@@ -75,7 +114,11 @@
     $('#leadForm').addEventListener('submit',()=>{if(!estimateWasChosen)lastEstimate={low:0,high:0}},true);$('#leadForm').addEventListener('reset',()=>{estimateWasChosen=false;lastEstimate={low:0,high:0}});
     let step=1;const steps=$$('.form-step'),bar=$('#progressBar');function showStep(n){step=n;steps.forEach(x=>x.classList.toggle('active',+x.dataset.step===n));bar.style.width=(n/3*100)+'%';$('#formStatus').className='form-status'}
     $$('input[name="services"]').forEach(x=>x.addEventListener('change',()=>$('#serviceError').style.display='none'));$$('[data-next]').forEach(b=>b.addEventListener('click',()=>{const current=steps[step-1];const required=$$('[required]',current);if(step===1&&!$('input[name="services"]:checked')){$('#serviceError').style.display='block';return}if(required.some(x=>!x.checkValidity())){required.forEach(x=>x.reportValidity());return}showStep(Math.min(3,step+1))}));$$('[data-back]').forEach(b=>b.addEventListener('click',()=>showStep(Math.max(1,step-1))));
-    $('#leadForm').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget,status=$('#formStatus'),btn=$('#submitLead');if(!form.checkValidity()){form.reportValidity();return}const d=new FormData(form),services=d.getAll('services');if(!services.length){showStep(1);$('#serviceError').style.display='block';return}const numberOrNull=name=>d.get(name)!==''&&d.get(name)!=null?+d.get(name):null;const payload={name:d.get('name'),phone:d.get('phone'),email:d.get('email')||'',street:d.get('street')||'',postal_code:d.get('postal_code'),city:d.get('city')||'',service:services.join(', '),services,building_type:d.get('building_type'),area_m2:numberOrNull('area_m2'),current_heating:d.get('current_heating')||'',monthly_bill:numberOrNull('monthly_bill'),pv_kwp:numberOrNull('pv_kwp'),storage_kwh:numberOrNull('storage_kwh'),annual_consumption_kwh:numberOrNull('annual_consumption_kwh'),estimate_low:lastEstimate.low||null,estimate_high:lastEstimate.high||null,investment_time:d.get('investment_time')||'',preferred_contact:d.get('preferred_contact')||'',message:d.get('message')||'',source:'greenexperts.pl',consent:d.get('consent')==='on',website:d.get('website')||''};btn.disabled=true;btn.textContent='Wysyłanie…';status.className='form-status';let sent=false,lastError;try{const r=await fetch('https://crm.greenexperts.pl/api/public/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.detail||'Nie udało się wysłać formularza')}sent=true}catch(err){lastError=err}if(sent){status.className='form-status ok';status.textContent='Dziękujemy! Zgłoszenie zostało wysłane do GreenExperts. Skontaktujemy się o wybranej porze.';form.reset();setTimeout(()=>showStep(1),6000)}else{status.className='form-status error';status.textContent='Nie udało się wysłać zgłoszenia. Spróbuj ponownie za chwilę. '+(lastError?.message||'')}btn.disabled=false;btn.textContent='Wyślij zapytanie →'});
+    const attributionKeys=['utm_source','utm_medium','utm_campaign','utm_content','utm_term','gclid','fbclid'];
+    const currentAttribution=Object.fromEntries(attributionKeys.map(key=>[key,new URLSearchParams(location.search).get(key)]).filter(([,value])=>value));
+    if(Object.keys(currentAttribution).length)sessionStorage.setItem('greenexperts_attribution',JSON.stringify(currentAttribution));
+    const leadSource=()=>{let saved={};try{saved=JSON.parse(sessionStorage.getItem('greenexperts_attribution')||'{}')}catch(_){saved={}}const parts=Object.entries(saved).map(([key,value])=>key+'='+String(value).slice(0,80));if(document.referrer){try{parts.push('ref='+new URL(document.referrer).hostname)}catch(_){}}return ['greenexperts.pl',...parts].join(' | ').slice(0,300)};
+    $('#leadForm').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget,status=$('#formStatus'),btn=$('#submitLead');if(!form.checkValidity()){form.reportValidity();return}const d=new FormData(form),services=d.getAll('services');if(!services.length){showStep(1);$('#serviceError').style.display='block';return}const numberOrNull=name=>d.get(name)!==''&&d.get(name)!=null?+d.get(name):null;const payload={name:d.get('name'),phone:d.get('phone'),email:d.get('email')||'',street:d.get('street')||'',postal_code:d.get('postal_code'),city:d.get('city')||'',service:services.join(', '),services,building_type:d.get('building_type'),area_m2:numberOrNull('area_m2'),current_heating:d.get('current_heating')||'',monthly_bill:numberOrNull('monthly_bill'),pv_kwp:numberOrNull('pv_kwp'),storage_kwh:numberOrNull('storage_kwh'),annual_consumption_kwh:numberOrNull('annual_consumption_kwh'),estimate_low:lastEstimate.low||null,estimate_high:lastEstimate.high||null,investment_time:d.get('investment_time')||'',preferred_contact:d.get('preferred_contact')||'',message:d.get('message')||'',source:leadSource(),consent:d.get('consent')==='on',website:d.get('website')||''};btn.disabled=true;btn.textContent='Wysyłanie…';status.className='form-status';let sent=false,lastError;try{const r=await fetch('https://crm.greenexperts.pl/api/public/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.detail||'Nie udało się wysłać formularza')}sent=true}catch(err){lastError=err}if(sent){status.className='form-status ok';status.textContent='Dziękujemy! Zgłoszenie zostało wysłane do GreenExperts. Skontaktujemy się o wybranej porze.';form.reset();setTimeout(()=>showStep(1),6000)}else{status.className='form-status error';status.textContent='Nie udało się wysłać zgłoszenia. Spróbuj ponownie za chwilę. '+(lastError?.message||'')}btn.disabled=false;btn.textContent='Wyślij zapytanie →'});
     const observer=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.08});$$('.reveal').forEach(x=>observer.observe(x));$$('.menu a').forEach(a=>a.addEventListener('click',()=>$('.menu').classList.remove('open')));calculate();
   </script>
 </body>
