@@ -9,6 +9,7 @@ import secrets
 import smtplib
 import sqlite3
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
@@ -19,6 +20,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 
@@ -610,6 +612,47 @@ class MessageCreate(BaseModel):
     employee_email: str = Field(default="anna.kowalska@nexa.pl", max_length=160)
 
 
+class ProductCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    sku: str = Field(default="", max_length=80)
+    wholesale_price: float = Field(default=0, ge=0)
+    suggested_price: float = Field(default=0, ge=0)
+
+
+class ProductUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=200)
+    sku: str | None = Field(default=None, max_length=80)
+    wholesale_price: float | None = Field(default=None, ge=0)
+    suggested_price: float | None = Field(default=None, ge=0)
+    active: bool | None = None
+
+
+class PublicLeadCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    phone: str = Field(min_length=7, max_length=40)
+    email: str = Field(default="", max_length=160)
+    street: str = Field(default="", max_length=200)
+    postal_code: str = Field(default="", max_length=12)
+    city: str = Field(default="", max_length=120)
+    service: str = Field(default="", max_length=400)
+    services: list[str] = Field(default_factory=list)
+    building_type: str = Field(default="", max_length=120)
+    area_m2: float | None = None
+    current_heating: str = Field(default="", max_length=120)
+    monthly_bill: float | None = None
+    pv_kwp: float | None = None
+    storage_kwh: float | None = None
+    annual_consumption_kwh: float | None = None
+    estimate_low: float | None = None
+    estimate_high: float | None = None
+    investment_time: str = Field(default="", max_length=120)
+    preferred_contact: str = Field(default="", max_length=120)
+    message: str = Field(default="", max_length=4000)
+    source: str = Field(default="", max_length=120)
+    consent: bool = False
+    website: str = Field(default="", max_length=200)
+
+
 class RoleUpdate(BaseModel):
     system_role: Literal["Admin", "User"]
 
@@ -720,31 +763,115 @@ def safe_upload_name(original_name: str, allowed_suffixes: set[str]) -> tuple[st
     return original, f"{uuid.uuid4().hex}{suffix}"
 
 
-def sync_google_meeting(db: sqlite3.Connection, meeting: dict) -> str:
-    token = setting_value(db, "google_access_token")
-    if not token or not meeting.get("starts_at"):
+def refresh_google_token(db: sqlite3.Connection) -> str:
+    """Odświeża access token Google przy pomocy refresh tokena. Zwraca nowy token lub ''."""
+    refresh_token = setting_value(db, "google_refresh_token")
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+    if not refresh_token or not client_id or not client_secret:
         return ""
+    body = urllib.parse.urlencode(
+        {
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "grant_type": "refresh_token",
+        }
+    ).encode("utf-8")
+    token_request = urllib.request.Request(
+        "https://oauth2.googleapis.com/token",
+        data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
     try:
-        start = datetime.fromisoformat(meeting["starts_at"])
-        end = start + timedelta(minutes=int(meeting.get("duration_minutes", 60)))
-        payload = json.dumps(
-            {
-                "summary": meeting["title"],
-                "description": meeting.get("notes", ""),
-                "start": {"dateTime": start.isoformat()},
-                "end": {"dateTime": end.isoformat()},
-            }
-        ).encode("utf-8")
-        calendar_request = urllib.request.Request(
-            "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-            data=payload,
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            method="POST",
-        )
-        with urllib.request.urlopen(calendar_request, timeout=10) as google_response:
-            return json.loads(google_response.read().decode("utf-8")).get("id", "")
+        with urllib.request.urlopen(token_request, timeout=15) as token_response:
+            token_data = json.loads(token_response.read().decode("utf-8"))
+        new_token = token_data.get("access_token", "")
+        if new_token:
+            save_setting(db, "google_access_token", new_token)
+        return new_token
     except Exception:
         return ""
+
+
+def google_calendar_request(db: sqlite3.Connection, url: str, method: str, payload: bytes | None) -> dict:
+    """Wykonuje żądanie do Google Calendar API z automatycznym odświeżeniem tokena po 401."""
+    token = setting_value(db, "google_access_token")
+    if not token:
+        token = refresh_google_token(db)
+    if not token:
+        return {}
+    for attempt in range(2):
+        calendar_request = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            method=method,
+        )
+        try:
+            with urllib.request.urlopen(calendar_request, timeout=10) as google_response:
+                raw = google_response.read().decode("utf-8")
+                return json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as exc:
+            if exc.code == 401 and attempt == 0:
+                token = refresh_google_token(db)
+                if not token:
+                    return {}
+                continue
+            return {}
+        except Exception:
+            return {}
+    return {}
+
+
+def google_event_payload(meeting: dict) -> bytes | None:
+    if not meeting.get("starts_at"):
+        return None
+    try:
+        start = datetime.fromisoformat(meeting["starts_at"])
+    except ValueError:
+        return None
+    end = start + timedelta(minutes=int(meeting.get("duration_minutes", 60)))
+    return json.dumps(
+        {
+            "summary": meeting["title"],
+            "description": meeting.get("notes", ""),
+            "start": {"dateTime": start.isoformat()},
+            "end": {"dateTime": end.isoformat()},
+        }
+    ).encode("utf-8")
+
+
+def sync_google_meeting(db: sqlite3.Connection, meeting: dict) -> str:
+    """Tworzy lub aktualizuje wydarzenie w Google Calendar. Zwraca ID wydarzenia."""
+    payload = google_event_payload(meeting)
+    if payload is None:
+        return meeting.get("google_event_id", "") or ""
+    event_id = meeting.get("google_event_id", "") or ""
+    if event_id:
+        result = google_calendar_request(
+            db,
+            f"https://www.googleapis.com/calendar/v3/calendars/primary/events/{urllib.parse.quote(event_id)}",
+            "PATCH",
+            payload,
+        )
+        return result.get("id", event_id)
+    result = google_calendar_request(
+        db, "https://www.googleapis.com/calendar/v3/calendars/primary/events", "POST", payload
+    )
+    return result.get("id", "")
+
+
+def delete_google_meeting(db: sqlite3.Connection, event_id: str) -> None:
+    if not event_id:
+        return
+    google_calendar_request(
+        db,
+        f"https://www.googleapis.com/calendar/v3/calendars/primary/events/{urllib.parse.quote(event_id)}",
+        "DELETE",
+        None,
+    )
 
 
 def send_candidate_status_email(email: str, name: str, candidate_status: str) -> bool:
@@ -777,6 +904,17 @@ app = FastAPI(
     description="Zintegrowany system sprzedaży, realizacji, finansów i operacji.",
     version="2.0.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://greenexperts.pl",
+        "https://www.greenexperts.pl",
+        "https://crm.greenexperts.pl",
+    ],
+    allow_methods=["POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 
@@ -1225,10 +1363,121 @@ def summary(request: Request) -> dict:
 
 
 @app.get("/api/products", tags=["CPQ"])
-def list_products(request: Request) -> list[dict]:
+def list_products(request: Request, include_inactive: bool = False) -> list[dict]:
     with get_db() as db:
         resolve_user(request, db)
-        return [dict(row) for row in db.execute("SELECT * FROM products WHERE active = 1 ORDER BY name").fetchall()]
+        query = "SELECT * FROM products ORDER BY active DESC, name" if include_inactive else "SELECT * FROM products WHERE active = 1 ORDER BY name"
+        return [dict(row) for row in db.execute(query).fetchall()]
+
+
+@app.post("/api/products", tags=["CPQ"], status_code=201)
+def create_product(payload: ProductCreate, request: Request) -> dict:
+    with get_db() as db:
+        resolve_user(request, db)
+        sku = payload.sku.strip() or f"SKU-{uuid.uuid4().hex[:8].upper()}"
+        try:
+            cursor = db.execute(
+                "INSERT INTO products (name, sku, wholesale_price, suggested_price, active) VALUES (?, ?, ?, ?, 1)",
+                (payload.name.strip(), sku, payload.wholesale_price, payload.suggested_price),
+            )
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=409, detail="Produkt z takim SKU już istnieje")
+        row = db.execute("SELECT * FROM products WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    return dict(row)
+
+
+@app.patch("/api/products/{product_id}", tags=["CPQ"])
+def update_product(product_id: int, payload: ProductUpdate, request: Request) -> dict:
+    changes = payload.model_dump(exclude_unset=True)
+    if not changes:
+        raise HTTPException(status_code=400, detail="Brak danych do aktualizacji")
+    if "active" in changes:
+        changes["active"] = 1 if changes["active"] else 0
+    with get_db() as db:
+        resolve_user(request, db)
+        exists = db.execute("SELECT id FROM products WHERE id = ?", (product_id,)).fetchone()
+        if not exists:
+            raise HTTPException(status_code=404, detail="Nie znaleziono produktu")
+        assignments = ", ".join(f"{field} = ?" for field in changes)
+        try:
+            db.execute(f"UPDATE products SET {assignments} WHERE id = ?", (*changes.values(), product_id))
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=409, detail="Produkt z takim SKU już istnieje")
+        row = db.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+    return dict(row)
+
+
+@app.delete("/api/products/{product_id}", tags=["CPQ"], status_code=status.HTTP_204_NO_CONTENT)
+def delete_product(product_id: int, request: Request) -> Response:
+    with get_db() as db:
+        resolve_user(request, db)
+        cursor = db.execute("UPDATE products SET active = 0 WHERE id = ?", (product_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Nie znaleziono produktu")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.post("/api/public/leads", tags=["Public"], status_code=201)
+def create_public_lead(payload: PublicLeadCreate) -> dict:
+    if payload.website.strip():
+        return {"status": "ok"}
+    if not payload.consent:
+        raise HTTPException(status_code=422, detail="Wymagana zgoda na przetwarzanie danych")
+    address_parts = [part for part in (payload.street.strip(), f"{payload.postal_code} {payload.city}".strip()) if part]
+    address = ", ".join(address_parts)
+    details = []
+    if payload.building_type:
+        details.append(f"Budynek: {payload.building_type}")
+    if payload.area_m2:
+        details.append(f"Powierzchnia: {payload.area_m2} m2")
+    if payload.current_heating:
+        details.append(f"Ogrzewanie: {payload.current_heating}")
+    if payload.monthly_bill:
+        details.append(f"Rachunek/mc: {payload.monthly_bill} zl")
+    if payload.pv_kwp:
+        details.append(f"PV: {payload.pv_kwp} kWp")
+    if payload.storage_kwh:
+        details.append(f"Magazyn: {payload.storage_kwh} kWh")
+    if payload.annual_consumption_kwh:
+        details.append(f"Zuzycie roczne: {payload.annual_consumption_kwh} kWh")
+    if payload.estimate_low or payload.estimate_high:
+        details.append(f"Szacunek: {payload.estimate_low or '?'} - {payload.estimate_high or '?'} zl")
+    if payload.investment_time:
+        details.append(f"Termin inwestycji: {payload.investment_time}")
+    if payload.preferred_contact:
+        details.append(f"Preferowany kontakt: {payload.preferred_contact}")
+    if payload.message:
+        details.append(f"Wiadomosc: {payload.message}")
+    notes = "\n".join(details)
+    estimated = payload.estimate_high or payload.estimate_low or 0
+    with get_db() as db:
+        cursor = db.execute(
+            """
+            INSERT INTO clients (company, contact_name, contact_email, phone, address, status, owner, last_contact, tags, priority, estimated_value, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, 'Nowy lead', '', ?, ?, 'Średni', ?, ?, ?)
+            """,
+            (
+                payload.name.strip(),
+                payload.name.strip(),
+                payload.email.strip(),
+                payload.phone.strip(),
+                address,
+                now_iso(),
+                json.dumps([tag for tag in payload.services if tag][:6], ensure_ascii=False),
+                float(estimated or 0),
+                notes,
+                now_iso(),
+            ),
+        )
+        db.execute(
+            "INSERT INTO notifications (title, content, category, recipient, created_at) VALUES (?, ?, 'Lead', '', ?)",
+            (
+                f"Nowy lead ze strony: {payload.name.strip()}",
+                f"Uslugi: {payload.service or ', '.join(payload.services)} | Tel: {payload.phone}",
+                now_iso(),
+            ),
+        )
+    return {"status": "ok", "id": cursor.lastrowid}
 
 
 @app.get("/api/clients/{client_id}/messages", tags=["Komunikacja"])
@@ -1432,11 +1681,29 @@ def update_meeting(meeting_id: int, payload: MeetingUpdate, request: Request) ->
             changes.pop("owner_email", None)
         assignments = ", ".join(f"{field} = ?" for field in changes)
         db.execute(f"UPDATE meetings SET {assignments} WHERE id = ?", (*changes.values(), meeting_id))
+        updated = db.execute("SELECT * FROM meetings WHERE id = ?", (meeting_id,)).fetchone()
+        event_id = sync_google_meeting(db, dict(updated))
+        if event_id and event_id != updated["google_event_id"]:
+            db.execute("UPDATE meetings SET google_event_id = ? WHERE id = ?", (event_id, meeting_id))
         row = db.execute(
             "SELECT m.*, c.company AS client_name FROM meetings m LEFT JOIN clients c ON c.id = m.client_id WHERE m.id = ?",
             (meeting_id,),
         ).fetchone()
     return dict(row)
+
+
+@app.delete("/api/meetings/{meeting_id}", tags=["Spotkania"], status_code=status.HTTP_204_NO_CONTENT)
+def delete_meeting(meeting_id: int, request: Request) -> Response:
+    with get_db() as db:
+        user = resolve_user(request, db)
+        meeting = db.execute("SELECT * FROM meetings WHERE id = ?", (meeting_id,)).fetchone()
+        if not meeting:
+            raise HTTPException(status_code=404, detail="Nie znaleziono spotkania")
+        if user["system_role"] != "Admin" and meeting["owner_email"] != user["email"]:
+            raise HTTPException(status_code=403, detail="Brak dostępu do spotkania")
+        delete_google_meeting(db, meeting["google_event_id"])
+        db.execute("DELETE FROM meetings WHERE id = ?", (meeting_id,))
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.get("/api/finance", tags=["Finanse"])
