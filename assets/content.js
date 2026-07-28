@@ -1,15 +1,21 @@
 const menuButton=document.querySelector('.mobile-toggle');
 const menu=document.querySelector('.menu');
 if(menuButton&&menu){
+  const menuLabels={
+    pl:{open:'Otwórz menu',close:'Zamknij menu'},
+    de:{open:'Menü öffnen',close:'Menü schließen'},
+    en:{open:'Open menu',close:'Close menu'}
+  };
+  const labels=menuLabels[document.documentElement.lang]||menuLabels.pl;
   menuButton.addEventListener('click',()=>{
     const isOpen=menu.classList.toggle('open');
     menuButton.setAttribute('aria-expanded',String(isOpen));
-    menuButton.setAttribute('aria-label',isOpen?'Zamknij menu':'Otwórz menu');
+    menuButton.setAttribute('aria-label',isOpen?labels.close:labels.open);
   });
   menu.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{
     menu.classList.remove('open');
     menuButton.setAttribute('aria-expanded','false');
-    menuButton.setAttribute('aria-label','Otwórz menu');
+    menuButton.setAttribute('aria-label',labels.open);
   }));
 }
 
