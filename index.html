@@ -152,5 +152,6 @@
     const observer=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.08});$$('.reveal').forEach(x=>observer.observe(x));$$('.menu a').forEach(a=>a.addEventListener('click',()=>$('.menu').classList.remove('open')));calculate();
   </script>
   <script src="assets/language.js"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "b3de8796d2da4a6481b1511341510ae0"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
