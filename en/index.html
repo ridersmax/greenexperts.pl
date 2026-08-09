@@ -215,37 +215,43 @@
   <footer class="footer"><div class="wrap"><div class="footer-grid"><div><img class="footer-logo" src="../assets/logo-footer.svg" alt="GreenExperts" width="420" height="96"><p style="max-width:330px;font-size:13px">Complete renewable energy systems for homes and businesses. Audit, installation, service, grants and financing across Poland.</p></div><div><h3>Services</h3><a href="pompy-ciepla.html">Heat pumps</a><a href="fotowoltaika.html">Solar PV</a><a href="magazyny-energii.html">Battery storage</a><a href="#uslugi">Air conditioning and HRV</a></div><div><h3>GreenExperts</h3><a href="#proces">How we work</a><a href="#ceny">Indicative prices</a><a href="#dotacje">Grants and financing</a><a href="blog.html">Blog</a><a href="#faq">FAQ</a></div><div><h3>Contact</h3><a href="#wycena">Free quotation</a><span>Service throughout Poland</span><span><br>Telephone: <a href="tel:720466984" style="color:inherit;text-decoration:none;">720 466 984</a></span></div></div><div class="legal"><span>© 2026 GreenExperts · Łukasz Kowalczyk</span><span><a href="polityka-prywatnosci.html">Privacy policy</a> · Indicative prices; not a commercial offer.</span></div></div></footer>
   <div class="sticky-cta"><a class="btn btn-primary" href="#wycena">Free quotation →</a></div>
 
-  <script src="../assets/catalog-pricing.js"></script>
+  <script src="../assets/catalog-pricing.js?v=20260809-2"></script>
   <script>
     const $=(s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
     const pricing=window.GreenExpertsCatalogPricing;
     const areaRange=$('#areaRange'),areaOut=$('#areaOut'),pvRange=$('#pvRange'),pvOut=$('#pvOut'),storageRange=$('#storageRange'),storageOut=$('#storageOut'),usageRange=$('#usageRange'),usageOut=$('#usageOut'),estimate=$('#estimate'),estimateBasis=$('#estimateBasis');let lastEstimate={low:null,high:null,pvCapacity:null,batteryCapacity:null},estimateWasChosen=false;
+    storageRange.value='0';
+    let catalogIsLive=false;
     const formatAmount=value=>value.toLocaleString('en-GB');
+    const catalogSource=()=>catalogIsLive?'Current CRM catalogue':'CRM catalogue snapshot dated 26 July 2026';
+    function refreshCatalogOptions(){const selectedPv=pvRange.value,selectedStorage=storageRange.value;pvRange.innerHTML=pricing.pvPackages.map(item=>`<option value="${item.capacity}">${formatAmount(item.capacity)} kWp — PLN ${formatAmount(item.price)}</option>`).join('');storageRange.innerHTML='<option value="0">No battery</option>'+pricing.batteryPackages.map(item=>`<option value="${item.capacity}">${formatAmount(item.capacity)} kWh — PLN ${formatAmount(item.price)}</option>`).join('');pvRange.value=pricing.pvPackages.some(item=>String(item.capacity)===selectedPv)?selectedPv:String(pricing.pvPackages[0].capacity);storageRange.value=pricing.batteryPackages.some(item=>String(item.capacity)===selectedStorage)?selectedStorage:'0'}
+    async function syncCatalogPrices(){try{const response=await fetch('https://crm.greenexperts.pl/api/public/catalog-prices',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)return;const snapshot=await response.json();if(pricing.applyCatalogSnapshot(snapshot)){catalogIsLive=true;refreshCatalogOptions();calculate()}}catch(_){}}
     function calculate(){
       const area=+areaRange.value,selectedPv=+pvRange.value,storage=+storageRange.value,usage=+usageRange.value,type=$('input[name="calc"]:checked').value;
       const result=pricing.estimateCatalogBudgetForUsage({type,areaM2:area,annualUsageKwh:usage,selectedPvKwp:selectedPv,batteryKwh:storage});
-      const {recommendation,demandOutsideCatalog,effectivePvKwp:effectivePv}=result;
-      if(type!=='heat'&&!demandOutsideCatalog&&effectivePv!==selectedPv)pvRange.value=String(effectivePv);
+      const {recommendation,effectivePvKwp:effectivePv}=result;
       areaOut.value=area+' m²';
       pvOut.value=effectivePv.toLocaleString('en-GB')+' kWp'+(result.pv?.mode==='next'?' → '+result.pv.package.capacity.toLocaleString('en-GB')+' kWp package':'');
       storageOut.value=storage.toLocaleString('en-GB')+' kWh'+(result.battery?.mode==='next'?' → '+result.battery.package.capacity.toLocaleString('en-GB')+' kWh package':'');
       const heatUsage=type==='combo'?' + approx. '+result.heatPumpElectricityKwh.toLocaleString('en-GB')+' kWh for the heat pump':'';
-      usageOut.value=usage.toLocaleString('en-GB')+' kWh'+heatUsage+' · '+(recommendation.available?'recommended package '+recommendation.package.capacity.toLocaleString('en-GB')+' kWp':'individual quote');
+      usageOut.value=usage.toLocaleString('en-GB')+' kWh'+heatUsage+' · '+(recommendation.available?'recommended package '+recommendation.package.capacity.toLocaleString('en-GB')+' kWp':'individual sizing above 10 kWp');
       $('#heatFields').hidden=type==='pv';$('#pvFields').hidden=type==='heat';
       if(!result.available){
         estimate.textContent='Individual quote';
-        estimateBasis.textContent='The selected scope is outside the 3–10 kWp PV or 5–20 kWh battery catalogue. Transfer the parameters to the enquiry form.';
-        lastEstimate={low:null,high:null,pvCapacity:demandOutsideCatalog?recommendation.requiredCapacity:effectivePv,batteryCapacity:storage};
+        estimateBasis.textContent='The selected scope is outside the 4–16 kW heat-pump, 3–10 kWp PV or 5–20 kWh battery catalogue. Transfer the parameters to the enquiry form.';
+        lastEstimate={low:null,high:null,pvCapacity:effectivePv,batteryCapacity:storage};
         return;
       }
       const basis=[];
+      if(result.heatPump?.package)basis.push(`heat pump ${formatAmount(result.heatPump.package.capacity)} kW with installation: PLN ${formatAmount(result.heatPump.totalPrice)}`);
       if(result.pv?.package)basis.push(`PV ${formatAmount(result.pv.package.capacity)} kWp: PLN ${formatAmount(result.pv.price)}`);
       if(result.battery?.package)basis.push(`battery ${formatAmount(result.battery.package.capacity)} kWh: PLN ${formatAmount(result.battery.price)}`);
-      estimate.textContent=type==='pv'?`from PLN ${formatAmount(result.low)}`:`PLN ${formatAmount(result.low)}–${formatAmount(result.high)}`;
-      estimateBasis.textContent=type==='heat'?'based on building floor area, before any grant or tax relief':`Catalogue prices: ${basis.join(' + ')}${type==='combo'?' + heat-pump range based on floor area':''} · PV sizing: ${formatAmount(pricing.defaultPvYieldKwhPerKwp)} kWh/kWp/year · before grants or tax relief`;
+      estimate.textContent=result.low===result.high?`from PLN ${formatAmount(result.low)}`:`PLN ${formatAmount(result.low)}–${formatAmount(result.high)}`;
+      const recommendationText=recommendation.available?` · the price covers the selected package; recommendation for ${formatAmount(result.designUsageKwh)} kWh/year: ${formatAmount(recommendation.package.capacity)} kWp`:` · demand of ${formatAmount(result.designUsageKwh)} kWh/year exceeds the 10 kWp catalogue; the price covers the selected package`;
+      estimateBasis.textContent=type==='heat'?`${catalogSource()}: ${basis.join(' + ')} · sized by floor area and an average building standard · before any grant or tax relief`:`${catalogSource()}: ${basis.join(' + ')}${recommendationText} · yield: ${formatAmount(pricing.defaultPvYieldKwhPerKwp)} kWh/kWp/year · before grants or tax relief`;
       lastEstimate={low:result.low,high:result.high,pvCapacity:result.pv?.package?.capacity??effectivePv,batteryCapacity:result.battery?.package?.capacity??0};
     }
-    [areaRange,pvRange,storageRange,usageRange].forEach(x=>x.addEventListener('input',calculate));$$('input[name="calc"]').forEach(x=>x.addEventListener('change',calculate));calculate();
+    [areaRange,pvRange,storageRange,usageRange].forEach(x=>x.addEventListener('input',calculate));$$('input[name="calc"]').forEach(x=>x.addEventListener('change',()=>{const type=$('input[name="calc"]:checked').value;if(type==='pv')storageRange.value='0';if(type==='combo'&&+storageRange.value===0)storageRange.value='10';if(type!=='heat'){const designUsage=+usageRange.value+(type==='combo'?pricing.estimateHeatPumpElectricityKwh(+areaRange.value):0),recommendation=pricing.recommendPvForUsage(designUsage);if(recommendation.available)pvRange.value=String(recommendation.package.capacity)}calculate()}));calculate();syncCatalogPrices();
     $('#calcToForm').addEventListener('click',()=>{estimateWasChosen=true;const type=$('input[name="calc"]:checked').value,selectedPv=lastEstimate.pvCapacity??Number(pvRange.value),selectedStorage=lastEstimate.batteryCapacity??Number(storageRange.value),hasBattery=selectedStorage>0;const wanted=type==='heat'?['Heat pump']:type==='pv'?['Solar PV',...(hasBattery?['Battery storage']:[])]:['Heat pump','Solar PV',...(hasBattery?['Battery storage']:[])];$$('input[name="services"]').forEach(x=>x.checked=wanted.includes(x.value));$('#area').value=areaRange.value;$('#leadPvKwp').value=type==='heat'?'':selectedPv;$('#leadStorageKwh').value=type==='heat'?'':selectedStorage;$('#leadUsageKwh').value=type==='heat'?'':usageRange.value;});
     $('#calcToForm').addEventListener('click',calculate);$('#phone').pattern='[+0-9][0-9 ()-]{6,}';$('#phone').title='Enter a telephone number containing digits';$('#phone').maxLength=30;$('#postal').pattern='[0-9]{2}-?[0-9]{3}';$('#postal').title='Enter a Polish postcode in the format 00-000';$('#postal').maxLength=6;
     $('#leadForm').addEventListener('submit',()=>{if(!estimateWasChosen)lastEstimate={low:0,high:0}},true);$('#leadForm').addEventListener('reset',()=>{estimateWasChosen=false;calculate()});

@@ -25,6 +25,28 @@ test("uses exact CRM catalogue prices for every battery package", () => {
   }
 });
 
+test("uses the same automatically selected heat-pump variants and installed prices as CRM", () => {
+  const expected = [
+    [40, 4, 31892.67, 47100],
+    [61, 6, 34378.50, 50400],
+    [100, 8, 37155.22, 54000],
+    [140, 10, 39270.82, 57000],
+    [160, 12, 41807.70, 60300],
+    [200, 14, 59316.14, 78700],
+    [220, 16, 50147.10, 70400],
+  ];
+  for (const [areaM2, capacity, equipmentPrice, totalPrice] of expected) {
+    const budget = pricing.heatPumpBudget(areaM2);
+    assert.equal(budget.available, true);
+    assert.equal(budget.package.capacity, capacity);
+    assert.equal(budget.equipmentPrice, equipmentPrice);
+    assert.equal(budget.totalPrice, totalPrice);
+  }
+  assert.equal(pricing.heatPumpBudget(0).available, false);
+  assert.equal(pricing.heatPumpBudget(250).available, false);
+  assert.equal(pricing.heatPumpBudget(460).available, false);
+});
+
 test("selects the smallest sufficient package using CRM oversizing limits", () => {
   assert.equal(pricing.selectPvPackage(2).available, false);
   assert.equal(pricing.selectPvPackage(2.5).package.capacity, 3);
@@ -59,28 +81,31 @@ test("uses the CRM default PV yield and makes annual usage drive the minimum pac
   assert.equal(minimum.mode, "catalog-minimum");
 });
 
-test("never prices a PV package below the capacity required by annual usage", () => {
-  const raised = pricing.estimateCatalogBudgetForUsage({
+test("keeps catalogue pricing tied to the selected package and reports demand separately", () => {
+  const selectedFive = pricing.estimateCatalogBudgetForUsage({
     type: "pv", areaM2: 140, annualUsageKwh: 6000, selectedPvKwp: 5, batteryKwh: 10,
   });
-  assert.equal(raised.available, true);
-  assert.equal(raised.effectivePvKwp, 8);
-  assert.equal(raised.pv.package.capacity, 8);
-  assert.equal(raised.low, 56000);
+  assert.equal(selectedFive.available, true);
+  assert.equal(selectedFive.effectivePvKwp, 5);
+  assert.equal(selectedFive.pv.package.capacity, 5);
+  assert.equal(selectedFive.low, 46000);
+  assert.equal(selectedFive.recommendation.package.capacity, 8);
+  assert.equal(selectedFive.recommendationOutsideCatalog, false);
 
-  const retained = pricing.estimateCatalogBudgetForUsage({
+  const selectedTen = pricing.estimateCatalogBudgetForUsage({
     type: "pv", areaM2: 140, annualUsageKwh: 4500, selectedPvKwp: 10, batteryKwh: 10,
   });
-  assert.equal(retained.effectivePvKwp, 10);
-  assert.equal(retained.low, 63000);
+  assert.equal(selectedTen.effectivePvKwp, 10);
+  assert.equal(selectedTen.low, 63000);
+  assert.equal(selectedTen.recommendation.package.capacity, 5);
 
-  const outside = pricing.estimateCatalogBudgetForUsage({
+  const demandAboveCatalogue = pricing.estimateCatalogBudgetForUsage({
     type: "pv", areaM2: 140, annualUsageKwh: 10000, selectedPvKwp: 10, batteryKwh: 10,
   });
-  assert.equal(outside.available, false);
-  assert.equal(outside.demandOutsideCatalog, true);
-  assert.equal(outside.recommendation.requiredCapacity, 10.5);
-  assert.equal(outside.low, null);
+  assert.equal(demandAboveCatalogue.available, true);
+  assert.equal(demandAboveCatalogue.recommendationOutsideCatalog, true);
+  assert.equal(demandAboveCatalogue.recommendation.requiredCapacity, 10.5);
+  assert.equal(demandAboveCatalogue.low, 63000);
 });
 
 test("prices PV and battery combinations as exact catalogue sums", () => {
@@ -111,9 +136,9 @@ test("prices PV and battery combinations as exact catalogue sums", () => {
   }
 });
 
-test("adds exact catalogue prices to the existing heat-pump range", () => {
+test("adds exact PV and battery catalogue prices to the installed heat-pump catalogue price", () => {
   const result = pricing.estimateCatalogBudget({ type: "combo", areaM2: 140, pvKwp: 6, batteryKwh: 10 });
-  assert.deepEqual([result.low, result.high], [89200, 103400]);
+  assert.deepEqual([result.low, result.high], [107000, 107000]);
 });
 
 test("combo sizing includes estimated future heat-pump electricity demand", () => {
@@ -122,28 +147,78 @@ test("combo sizing includes estimated future heat-pump electricity demand", () =
     type: "combo", areaM2: 140, annualUsageKwh: 4500, selectedPvKwp: 5, batteryKwh: 10,
   });
   assert.equal(result.designUsageKwh, 9535);
-  assert.equal(result.effectivePvKwp, 10);
-  assert.equal(result.pv.package.capacity, 10);
-  assert.deepEqual([result.low, result.high], [102200, 116400]);
+  assert.equal(result.effectivePvKwp, 5);
+  assert.equal(result.pv.package.capacity, 5);
+  assert.equal(result.recommendation.package.capacity, 10);
+  assert.deepEqual([result.low, result.high], [103000, 103000]);
 });
 
 test("requires an individual quote outside the available catalogue", () => {
   assert.equal(pricing.estimateCatalogBudget({ type: "pv", areaM2: 140, pvKwp: 10.5, batteryKwh: 10 }).available, false);
   assert.equal(pricing.estimateCatalogBudget({ type: "pv", areaM2: 140, pvKwp: 6, batteryKwh: 21 }).available, false);
+  assert.equal(pricing.estimateCatalogBudget({ type: "heat", areaM2: 250, pvKwp: 0, batteryKwh: 0 }).available, false);
+});
+
+test("applies a complete public CRM catalogue snapshot and rejects incomplete data", () => {
+  const original = {
+    version: pricing.catalogVersion,
+    products: [
+      ...pricing.pvPackages.map((item) => ({ ...item, category: "Fotowoltaika", suggested_price: item.price })),
+      ...pricing.batteryPackages.map((item) => ({ ...item, category: "Magazyn energii", suggested_price: item.price })),
+      ...pricing.heatPumpPackages.map((item) => ({
+        ...item,
+        category: "Pompa ciepła",
+        suggested_price: item.price,
+        tank_capacity_l: item.includesTank ? 185 : 0,
+      })),
+    ],
+  };
+
+  assert.equal(pricing.applyCatalogSnapshot({ version: "incomplete", products: original.products.filter((item) => item.sku !== "GE-PV-10-STANDARD") }), false);
+  assert.equal(pricing.catalogVersion, original.version);
+
+  const changed = {
+    version: "live-test-1",
+    products: original.products.map((item) => {
+      if (item.sku === "GE-PV-5-STANDARD") return { ...item, suggested_price: 25000 };
+      if (item.sku === "GE-BAT-10-STANDARD") return { ...item, suggested_price: 24000 };
+      if (item.sku === "ME-SUZ-SWM100VA-ERSD-VM6E") return { ...item, suggested_price: 40000 };
+      return item;
+    }),
+  };
+
+  try {
+    assert.equal(pricing.applyCatalogSnapshot(changed), true);
+    assert.equal(pricing.catalogVersion, "live-test-1");
+    assert.equal(pricing.selectPvPackage(5).price, 25000);
+    assert.equal(pricing.selectBatteryPackage(10).price, 24000);
+    assert.equal(pricing.heatPumpBudget(140).equipmentPrice, 40000);
+    assert.equal(pricing.estimateCatalogBudget({ type: "pv", areaM2: 140, pvKwp: 5, batteryKwh: 10 }).low, 49000);
+  } finally {
+    assert.equal(pricing.applyCatalogSnapshot(original), true);
+  }
 });
 
 test("all localized homepages load the catalogue model and contain valid inline JavaScript", () => {
   const root = path.resolve(__dirname, "..");
   for (const relative of ["index.html", "en/index.html", "de/index.html"]) {
     const html = fs.readFileSync(path.join(root, relative), "utf8");
-    assert.match(html, /assets\/catalog-pricing\.js/);
+    assert.match(html, /assets\/catalog-pricing\.js\?v=20260809-2/);
     assert.match(html, /id="estimateBasis"/);
     assert.match(html, /estimateCatalogBudgetForUsage/);
-    assert.match(html, /demandOutsideCatalog/);
+    assert.match(html, /api\/public\/catalog-prices/);
+    assert.match(html, /applyCatalogSnapshot/);
+    assert.match(html, /syncCatalogPrices/);
+    assert.match(html, /catalogIsLive/);
+    assert.match(html, /catalogSource/);
+    assert.match(html, /2026/);
     assert.match(html, /effectivePv/);
+    assert.match(html, /storageRange\.value='0'/);
+    assert.match(html, /type==='combo'&&\+storageRange\.value===0/);
     assert.match(html, /<select id="pvRange"/);
     assert.match(html, /<select id="storageRange"/);
     assert.doesNotMatch(html, /<input id="(?:pvRange|storageRange)" type="range"/);
+    assert.doesNotMatch(html, /pvRange\.value=String\(effectivePv\)/);
     assert.doesNotMatch(html, /pv\*1900|storage\*1600|pv\*1750|storage\*1450/);
 
     for (const match of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)) {
